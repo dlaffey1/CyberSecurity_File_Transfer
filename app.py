@@ -1,10 +1,10 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
+from models import db
+from routes import send_file, get_file
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///server.db"
-db = SQLAlchemy(app)
+db.init_app(app)
 
 if __name__ == '__main__':
-    from routes import send_file, get_file
     app.run(debug=True)

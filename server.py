@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from models import db
-from routes import send_file, get_file
+from routes import send_file, get_file, app
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///server.db"
