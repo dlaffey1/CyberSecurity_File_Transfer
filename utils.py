@@ -5,10 +5,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import os
 
-def encrypt_file(file, public_key):
-    # Read the file
-    file_data = file.read()
-    
+def encrypt_file(file_data, public_key):
     # Encrypt the file using RSA with the recipient's public key
     encrypted_file = public_key.encrypt(
         file_data,
