@@ -1,3 +1,4 @@
+# Import required libraries
 from flask import Flask, request, jsonify
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
@@ -36,28 +37,6 @@ public_key_pem = public_key.public_bytes(
     format=serialization.PublicFormat.SubjectPublicKeyInfo
 )
 
-# Define RSA encryption function
-def rsa_encrypt(data):
-    return public_key.encrypt(
-        data,
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
-        )
-    )
-
-# Define RSA decryption function
-def rsa_decrypt(encrypted_data):
-    return private_key.decrypt(
-        encrypted_data,
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
-        )
-    )
-
 # Define the route for sending a file
 @app.route('/send_file', methods=['POST'])
 def send_file():
@@ -82,8 +61,8 @@ def send_file():
     # Encrypt the file with AES using the shared secret
     encrypted_file_aes = aes_encrypt_file(file_data, aes_key)
     
-    # Save the encrypted file and metadata to the database
-    new_file = File(file_name=file.filename, encrypted_data_aes=encrypted_file_aes, encrypted_data_rsa=encrypted_file_rsa)
+    # Save the encrypted file, AES key, and metadata to the database
+    new_file = File(file_name=file.filename, encrypted_data_aes=encrypted_file_aes, encrypted_data_rsa=encrypted_file_rsa, aes_key=aes_key)
     db.session.add(new_file)
     db.session.commit()
     
@@ -101,16 +80,24 @@ def get_file():
     public_key_dh = pow(g, private_key_dh, p)
     shared_secret = pow(public_key_dh, private_key_dh, p)
     
-    # Retrieve encrypted file and metadata from the database
+    # Retrieve encrypted file, AES key, and metadata from the database
     file = File.query.first()
     encrypted_file_aes = file.encrypted_data_aes
     encrypted_file_rsa = file.encrypted_data_rsa
+    aes_key = file.aes_key
     
     # Decrypt the file with RSA to obtain the AES key
-    aes_key = decrypt_file(encrypted_file_rsa)
+    decrypted_aes_key = private_key.decrypt(
+        aes_key,
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None
+        )
+    )
     
     # Decrypt the file with AES using the obtained AES key
-    decrypted_file = aes_decrypt_file(encrypted_file_aes, aes_key)
+    decrypted_file = aes_decrypt_file(encrypted_file_aes, decrypted_aes_key)
     
     # Return the decrypted file to the client
     return decrypted_file
