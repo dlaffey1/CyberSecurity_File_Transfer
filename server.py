@@ -1,22 +1,28 @@
-# Import required libraries
 from flask import Flask, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
-from models import db, File
 from utils import decrypt_file, encrypt_file, generate_aes_key, aes_encrypt_file, aes_decrypt_file
 
-# Initialize the Flask app
 app = Flask(__name__)
 
 # Configure the database URI
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///server.db"
 
 # Initialize the database
-db.init_app(app)
+db = SQLAlchemy(app)
+
+# Define the model
+class File(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    file_name = db.Column(db.String(100), nullable=False)
+    encrypted_data_rsa = db.Column(db.LargeBinary, nullable=False)
+    encrypted_data_aes = db.Column(db.LargeBinary, nullable=False)
+    aes_key = db.Column(db.LargeBinary, nullable=False)
 
 # Generate RSA keys for file encryption and decryption
 private_key = rsa.generate_private_key(
