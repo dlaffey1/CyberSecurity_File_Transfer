@@ -47,7 +47,8 @@ def signup():
         new_user = Users(username=username, h_pwd=h_pwd)
         db.session.add(new_user)
         db.session.commit()
-
+        
+        flash(f"User {username} successfully registered")
         return redirect(url_for("login"))
 
     return render_template("signup.html")
@@ -61,13 +62,15 @@ def login():
         
         user = Users.query.filter_by(username=username).first()
         if user is None:
-            return render_template("error.html", error_msg="Invalid username or password")    
+            flash("Invalid credentials. Try again")
+            return redirect(url_for("login"))   
         
         if check_password_hash(user.h_pwd, pwd):
             session['currentUser'] = user.id
             return redirect(url_for("index"))
         else:
-            return render_template("error.html", error_msg="Invalid username or password")
+            flash("Invalid credentials. Try again")
+            return redirect(url_for("login"))
     
     return render_template("login.html")
 

@@ -1,18 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Home</title>
-  </head>
-  <body>
-    <h1>Welcome to the Home Page</h1>
-    {% if 'currentUser' in session %}
-    <p>You are logged in as {{ session['currentUser'] }} - <a href="{{ url_for('logout') }}">Logout</a></p>
-    {% else %}
+{% extends "layout.html" %}
+{% block body %}
+  <h1>Welcome to the Home Page</h1>
+  {% if 'currentUser' in session %}
     <p>
-      <a href="{{ url_for('login') }}">Login</a> or
-      <a href="{{ url_for('signup') }}">Signup</a>
+      You are logged in as {{ session['currentUser'] }} -
+      <a href="{{ url_for("logout") }}">Logout</a>
     </p>
-    {% endif %}
-  </body>
-</html>
+  {% else %}
+    <p>
+      <a href="{{ url_for("login") }}">Login</a> or
+      <a href="{{ url_for("signup") }}">Signup</a>
+    </p>
+  {% endif %}
+{% endblock body %}
