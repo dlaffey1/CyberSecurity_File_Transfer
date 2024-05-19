@@ -21,11 +21,14 @@ class Users(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), nullable=False, unique=True)
     h_pwd = db.Column(db.String(162), nullable=False)
-    
+    pub_sig_key = db.Column(db.String(391), nullable=False)
+    pub_encrypt_key = db.Column(db.String(391), nullable=False)
 
-    def __init__(self, username, h_pwd) -> None:
+    def __init__(self, username, h_pwd, pub_sig_key, pub_encrypt_key) -> None:
         self.username = username
         self.h_pwd = h_pwd
+        self.pub_sig_key = pub_sig_key
+        self.pub_encrypt_key = pub_encrypt_key
 
 
 with app.app_context():
@@ -42,13 +45,20 @@ def signup():
     if request.method == "POST":
         username = request.form["username"]
         pwd = request.form["password"]
+        pub_sig_key = request.form["pub-sig-key"]
+        pub_encrypt_key = request.form["pub-encrypt-key"]
 
         h_pwd = generate_password_hash(password=pwd)
-        
-        new_user = Users(username=username, h_pwd=h_pwd)
+
+        new_user = Users(
+            username=username,
+            h_pwd=h_pwd,
+            pub_sig_key=pub_sig_key,
+            pub_encrypt_key=pub_encrypt_key,
+        )
         db.session.add(new_user)
         db.session.commit()
-        
+
         flash(f"User {username} successfully registered")
         return redirect(url_for("login"))
 
@@ -60,19 +70,19 @@ def login():
     if request.method == "POST":
         username = request.form["username"]
         pwd = request.form["password"]
-        
+
         user = Users.query.filter_by(username=username).first()
         if user is None:
             flash("Invalid credentials. Try again")
-            return redirect(url_for("login"))   
-        
+            return redirect(url_for("login"))
+
         if check_password_hash(user.h_pwd, pwd):
-            session['currentUser'] = user.id
+            session["currentUser"] = user.id
             return redirect(url_for("index"))
         else:
             flash("Invalid credentials. Try again")
             return redirect(url_for("login"))
-    
+
     return render_template("login.html")
 
 
