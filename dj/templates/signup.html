@@ -1,3 +1,19 @@
+<script>
+  function generateKeypair() {
+    document.getElementById('public-key').textContent = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwjMH++ruvt42t30UIlhckLTJxvSCXsyhvZMLTAqjFeE"+
+    "jX4QnNhr3D4UQaUMCiUF2A7afRpzm0oX+U4P+Xx+809VR/L9eKYCfX1mIeiBhva7zh/uOEov2jQeio1iIf5pgtZW" +
+    "1EPbMuntpnqDnWKgnpung+0KQ3oe61YUWG1gbU3NVeHTunzQxvYBXisLtxq70yvqdlCd38F7ZNdnWQQREn67W1Kn8" +
+    "WkIro176K6R2MX2ZCwcXrxbU5JMmPmKxsS0updk5vLfxc12dFOVDSMyv/Yei9ZEOFIP9Ha0SF/1C8WJwEO+h6i2avWBdZrC9MMX7aqeWI9DH+qxVc/LWT9MmwIDAQAB";
+
+    document.getElementById('copy-pub').style.display = "block";
+  }
+
+  function copyPublicKey() {
+    var publicKey = document.getElementById("public-key");
+    navigator.clipboard.writeText(publicKey.textContent);
+    alert("Public key copied to clipboard!");
+  }
+</script>
 {% extends "layout.html" %}
 {% block body %}
   <h1>Signup</h1>
@@ -8,6 +24,15 @@
     <br />
     <label for="password">Password:</label>
     <input type="password" id="password" name="password" required />
+    <br />
+    <br />
+    <label for="public key">Public Key:</label>
+    <br>
+    <div>
+      <p type="text" id="public-key" name="public-key" required readonly></p>
+      <button type="button" onclick="copyPublicKey()" class="copy-button" id="copy-pub">Copy Key</button>
+    </div>
+    <button type="button" onclick="generateKeypair()">Generate Keypair</button>
     <br />
     <br />
     <input type="submit" value="Signup" />
