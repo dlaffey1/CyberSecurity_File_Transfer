@@ -20,7 +20,8 @@ db = SQLAlchemy(app)
 class Users(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), nullable=False, unique=True)
-    h_pwd = db.Column(db.String(200), nullable=False)
+    h_pwd = db.Column(db.String(162), nullable=False)
+    
 
     def __init__(self, username, h_pwd) -> None:
         self.username = username
