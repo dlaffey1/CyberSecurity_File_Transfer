@@ -16,6 +16,7 @@
     {% endif %}
  
   {% endwith %}
+  {% if 'currentUser' in session %}You are logged in as '{{ session['currentUser'] }}'{% endif %}
  
   {% block body %}
  
