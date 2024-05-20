@@ -121,12 +121,10 @@ def upload_file():
         data = request.get_json()
         file_label = data["file_label"]
         file_content = base64.b64decode(data["file"])
-        print(f"File Size: {convert_size(sys.getsizeof(file_content))}")
 
         file_path = os.path.join(UPLOAD_FOLDER, file_label)
         with open(file_path, "wb") as f:
             f.write(file_content)
-            print(os.path.getsize(file_path))
 
     return render_template("uploadFile.html")
 
