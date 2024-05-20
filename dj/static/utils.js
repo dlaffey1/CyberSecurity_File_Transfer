@@ -2,9 +2,15 @@ function hello() {
     console.log("Hello World!");
 }
 
-function arrayBufferToB64(exportedKey) {
-    const arrayOfKey = new Uint8Array(exportedKey);
-    return window.btoa(String.fromCharCode(...arrayOfKey));
+function ABToB64(arrayBuffer) {
+    let fullString = "";
+    const bytes = new Uint8Array(arrayBuffer);
+    const chunkSize = 8192; // Process data in chunks to avoid stack overflow
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.subarray(i, i + chunkSize);
+        fullString += String.fromCharCode.apply(null, chunk);
+    }
+    return window.btoa(fullString);
 }
 
 async function keyPairToB64(keyPair) {
@@ -18,10 +24,10 @@ async function keyPairToB64(keyPair) {
         keyPair.privateKey
     );
 
-    return [arrayBufferToB64(keyPubExp), arrayBufferToB64(keyPrivExp)];
+    return [ABToB64(keyPubExp), ABToB64(keyPrivExp)];
 }
 
-function arrayBufferFromB64(stringInB64) {
+function B64ToAB(stringInB64) {
     const binaryString = window.atob(stringInB64);
     const buf = new ArrayBuffer(binaryString.length);
     const bufView = new Uint8Array(buf);
@@ -48,7 +54,7 @@ async function keyPairFromB64(publicKeyB64, privateKeyB64, keyType) {
 
     const importedSigPubKey = await window.crypto.subtle.importKey(
         "spki",
-        arrayBufferFromB64(publicKeyB64),
+        B64ToAB(publicKeyB64),
         {
             name: algorithm,
             hash: "SHA-256",
@@ -58,7 +64,7 @@ async function keyPairFromB64(publicKeyB64, privateKeyB64, keyType) {
     );
     const importedSigPrivKey = await window.crypto.subtle.importKey(
         "pkcs8",
-        arrayBufferFromB64(privateKeyB64),
+        B64ToAB(privateKeyB64),
         {
             name: algorithm,
             hash: "SHA-256",
@@ -139,11 +145,7 @@ async function encryptFileData(key, counter, file) {
     };
 }
 
-async function decryptFileData(
-    key,
-    counter,
-    encryptedFileData
-) {
+async function decryptFileData(key, counter, encryptedFileData) {
     const decrypt = async (data) => {
         return await window.crypto.subtle.decrypt(
             {
@@ -155,8 +157,6 @@ async function decryptFileData(
             data
         );
     };
-
-    console.log(encryptedFileData);
 
     const decryptedFile = await decrypt(encryptedFileData.file);
     const decryptedFileName = await decrypt(encryptedFileData.name);
@@ -171,4 +171,21 @@ async function decryptFileData(
     });
 
     return file;
+}
+
+async function decryptFileKey(encryptedFileKey) {
+    const encryptKeyPair = await getKeyPairFromDB("encrypt");
+
+    const fileKeyAB = await window.crypto.subtle.decrypt(
+        { name: "RSA-OAEP" },
+        encryptKeyPair.privateKey,
+        encryptedFileKey
+    );
+    return await window.crypto.subtle.importKey(
+        "raw",
+        fileKeyAB,
+        "AES-CTR",
+        true,
+        ["encrypt", "decrypt"]
+    );
 }
