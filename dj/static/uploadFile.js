@@ -4,6 +4,8 @@ document.addEventListener("DOMContentLoaded", function () {
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
         const file = document.getElementById("file").files[0];
+        const file_size = file.size;
+        console.log(file_size);
         const file_label = document.getElementById("file_label").value;
 
         const fileKey = await generateFileKey();
@@ -24,6 +26,7 @@ document.addEventListener("DOMContentLoaded", function () {
             },
             body: JSON.stringify({
                 file: ABToB64(encryptedFileData.file),
+                file_size: file_size,
                 file_label: file_label,
                 file_name: ABToB64(encryptedFileData.name),
                 file_type: ABToB64(encryptedFileData.type),
