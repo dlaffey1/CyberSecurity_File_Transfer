@@ -19,6 +19,8 @@
   {% if 'current_user' in session %}
     You are logged in as '{{ session['current_user'] }}'
     <a href="{{ url_for("logout") }}">Logout</a>
+    <a href="{{ url_for("index") }}">Home</a>
+    <a href="{{ url_for("upload_file") }}">Upload File</a>
   {% endif %}
  
   {% block body %}
