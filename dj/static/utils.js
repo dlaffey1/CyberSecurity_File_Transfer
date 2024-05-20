@@ -113,7 +113,7 @@ async function fileDataToABs(file) {
     return [fileArray, fileNameArray, fileTypeArray];
 }
 
-async function encryptFile(key, counter, file) {
+async function encryptFileData(key, counter, file) {
     const [fileAB, fileNameAB, fileTypeAB] = await fileDataToABs(file);
 
     const encrypt = async (data) => {
@@ -132,15 +132,17 @@ async function encryptFile(key, counter, file) {
     const encryptedFileName = await encrypt(fileNameAB);
     const encryptedFileType = await encrypt(fileTypeAB);
 
-    return [encryptedFile, encryptedFileName, encryptedFileType];
+    return {
+        file: encryptedFile,
+        name: encryptedFileName,
+        type: encryptedFileType,
+    };
 }
 
-async function decryptFile(
+async function decryptFileData(
     key,
     counter,
-    encryptedFile,
-    encryptedFileName,
-    encryptedFileType
+    encryptedFileData
 ) {
     const decrypt = async (data) => {
         return await window.crypto.subtle.decrypt(
@@ -154,9 +156,11 @@ async function decryptFile(
         );
     };
 
-    const decryptedFile = await decrypt(encryptedFile);
-    const decryptedFileName = await decrypt(encryptedFileName);
-    const decryptedFileType = await decrypt(encryptedFileType);
+    console.log(encryptedFileData);
+
+    const decryptedFile = await decrypt(encryptedFileData.file);
+    const decryptedFileName = await decrypt(encryptedFileData.name);
+    const decryptedFileType = await decrypt(encryptedFileData.type);
 
     const decoder = new TextDecoder();
     const fileName = decoder.decode(decryptedFileName);
