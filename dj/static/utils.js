@@ -2,7 +2,7 @@ function hello() {
     console.log("Hello World!");
 }
 
-function keyToB64(exportedKey) {
+function arrayBufferToB64(exportedKey) {
     const arrayOfKey = new Uint8Array(exportedKey);
     return window.btoa(String.fromCharCode(...arrayOfKey));
 }
@@ -18,11 +18,11 @@ async function keyPairToB64(keyPair) {
         keyPair.privateKey
     );
 
-    return [keyToB64(keyPubExp), keyToB64(keyPrivExp)];
+    return [arrayBufferToB64(keyPubExp), arrayBufferToB64(keyPrivExp)];
 }
 
-function ArrayBufferFromB64(keyInB64) {
-    const binaryString = window.atob(keyInB64);
+function arrayBufferFromB64(stringInB64) {
+    const binaryString = window.atob(stringInB64);
     const buf = new ArrayBuffer(binaryString.length);
     const bufView = new Uint8Array(buf);
     for (let i = 0; i < binaryString.length; i++) {
@@ -31,10 +31,24 @@ function ArrayBufferFromB64(keyInB64) {
     return buf;
 }
 
-async function keyPairFromB64(algorithm, publicKeyB64, privateKeyB64, usages) {
+async function keyPairFromB64(publicKeyB64, privateKeyB64, keyType) {
+    let usages, algorithm;
+
+    switch (keyType) {
+        case "sig":
+            usages = { publicKey: ["verify"], privateKey: ["sign"] };
+            algorithm = "RSA-PSS";
+            break;
+
+        case "encrypt":
+            usages = { publicKey: ["encrypt"], privateKey: ["decrypt"] };
+            algorithm = "RSA-OAEP";
+            break;
+    }
+
     const importedSigPubKey = await window.crypto.subtle.importKey(
         "spki",
-        ArrayBufferFromB64(publicKeyB64),
+        arrayBufferFromB64(publicKeyB64),
         {
             name: algorithm,
             hash: "SHA-256",
@@ -44,7 +58,7 @@ async function keyPairFromB64(algorithm, publicKeyB64, privateKeyB64, usages) {
     );
     const importedSigPrivKey = await window.crypto.subtle.importKey(
         "pkcs8",
-        ArrayBufferFromB64(privateKeyB64),
+        arrayBufferFromB64(privateKeyB64),
         {
             name: algorithm,
             hash: "SHA-256",
@@ -59,27 +73,7 @@ async function keyPairFromB64(algorithm, publicKeyB64, privateKeyB64, usages) {
     };
 }
 
-async function sigKeyPairFromB64(publicKeyB64, privateKeyB64) {
-    const keyUsages = { publicKey: ["verify"], privateKey: ["sign"] };
-    return await keyPairFromB64(
-        "RSA-PSS",
-        publicKeyB64,
-        privateKeyB64,
-        keyUsages
-    );
-}
-
-async function encryptKeyPairFromB64(publicKeyB64, privateKeyB64) {
-    const keyUsages = { publicKey: ["encrypt"], privateKey: ["decrypt"] };
-    return await keyPairFromB64(
-        "RSA-OAEP",
-        publicKeyB64,
-        privateKeyB64,
-        keyUsages
-    );
-}
-
-async function getKeyPairsFromDB(keyType) {
+async function getKeyPairFromDB(keyType) {
     return new Promise((resolve, reject) => {
         const idb = window.indexedDB.open("harambe");
 
@@ -101,7 +95,7 @@ async function getKeyPairsFromDB(keyType) {
 
             keyRequest.onsuccess = (event) => {
                 const [privKeyB64, pubKeyB64] = event.target.result;
-                const keyPair = encryptKeyPairFromB64(pubKeyB64, privKeyB64);
+                const keyPair = keyPairFromB64(pubKeyB64, privKeyB64, keyType);
 
                 resolve(keyPair);
             };

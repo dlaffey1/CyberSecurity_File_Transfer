@@ -96,39 +96,23 @@ async function saveToDB(encryptKeyPair, sigKeyPair) {
 
     idb.onupgradeneeded = (event) => {
         const db = event.target.result;
-        db.createObjectStore("public-keys");
-        db.createObjectStore("private-keys");
+        db.createObjectStore("encrypt");
+        db.createObjectStore("sig");
     };
 
     idb.onsuccess = (event) => {
         const db = event.target.result;
         const transaction = db.transaction(
-            ["public-keys", "private-keys"],
+            ["encrypt", "sig"],
             "readwrite"
         );
-        const pubKeys = transaction.objectStore("public-keys");
-        const privKeys = transaction.objectStore("private-keys");
+        const encryptKeyPair = transaction.objectStore("encrypt");
+        const sigKeyPair = transaction.objectStore("sig");
 
-        pubKeys.put(encryptPubKeyB64, "encrypt");
-        privKeys.put(encryptPrivKeyB64, "encrypt");
+        encryptKeyPair.put(encryptPubKeyB64, "public");
+        encryptKeyPair.put(encryptPrivKeyB64, "private");
 
-        privKeys.put(sigPrivKeyB64, "sig");
-        pubKeys.put(sigPubKeyB64, "sig");
-    };
-}
-
-async function getKeyPairsFromDB() {
-    const idb = window.indexedDB.open("harambe");
-
-    idb.onerror = (event) => {
-        console.log("Couldn't open IndexedDB");
-    };
-
-    idb.onsuccess = (event) => {
-        const db = event.target.result;
-        const transaction = db.transaction(
-            ["public-keys", "private-keys"],
-            "readonly"
-        );
+        sigKeyPair.put(sigPubKeyB64, "public");
+        sigKeyPair.put(sigPrivKeyB64, "private");
     };
 }
