@@ -96,7 +96,7 @@ def login():
             return redirect(url_for("login"))
 
         if check_password_hash(user.h_pwd, pwd):
-            session["current_user"] = user.id
+            session["current_user"] = user.user_id
             return redirect(url_for("index"))
         else:
             flash("Invalid credentials. Try again")
@@ -109,6 +109,14 @@ def login():
 def upload_file():
     if not session.get("current_user", False):
         return redirect(url_for("login"))
+    
+    if request.method == "POST":
+        user_id = session.get("current_user")
+        
+        data = request.get_json()
+        print(data)
+
+    return render_template("uploadFile.html")
 
 
 @app.route("/logout")
