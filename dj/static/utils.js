@@ -1,3 +1,7 @@
+function hello() {
+    console.log("Hello World!");
+}
+
 function keyToB64(exportedKey) {
     const arrayOfKey = new Uint8Array(exportedKey);
     return window.btoa(String.fromCharCode(...arrayOfKey));
@@ -27,30 +31,80 @@ function ArrayBufferFromB64(keyInB64) {
     return buf;
 }
 
-async function sigKeyPairFromB64(publickKeyB64, privateKeyB64) {
+async function keyPairFromB64(algorithm, publicKeyB64, privateKeyB64, usages) {
     const importedSigPubKey = await window.crypto.subtle.importKey(
         "spki",
-        ArrayBufferFromB64(publickKeyB64),
+        ArrayBufferFromB64(publicKeyB64),
         {
-            name: "RSA-PSS",
+            name: algorithm,
             hash: "SHA-256",
         },
         true,
-        ["verify"]
+        usages.publicKey
     );
     const importedSigPrivKey = await window.crypto.subtle.importKey(
         "pkcs8",
         ArrayBufferFromB64(privateKeyB64),
         {
-            name: "RSA-PSS",
+            name: algorithm,
             hash: "SHA-256",
         },
         true,
-        ["sign"]
+        usages.privateKey
     );
 
     return {
         publicKey: importedSigPubKey,
         privateKey: importedSigPrivKey,
     };
+}
+
+async function sigKeyPairFromB64(publicKeyB64, privateKeyB64) {
+    const keyUsages = { publicKey: ["verify"], privateKey: ["sign"] };
+    return await keyPairFromB64(
+        "RSA-PSS",
+        publicKeyB64,
+        privateKeyB64,
+        keyUsages
+    );
+}
+
+async function encryptKeyPairFromB64(publicKeyB64, privateKeyB64) {
+    const keyUsages = { publicKey: ["encrypt"], privateKey: ["decrypt"] };
+    return await keyPairFromB64(
+        "RSA-OAEP",
+        publicKeyB64,
+        privateKeyB64,
+        keyUsages
+    );
+}
+
+async function getKeyPairsFromDB(keyType) {
+    return new Promise((resolve, reject) => {
+        const idb = window.indexedDB.open("harambe");
+
+        idb.onerror = (event) => {
+            console.log("Couldn't open IndexedDB");
+            reject(`Couldn't access DB: ${event.target.errorcode}`);
+        };
+
+        idb.onsuccess = (event) => {
+            const db = event.target.result;
+            const transaction = db.transaction([keyType], "readonly");
+            const keyStore = transaction.objectStore(keyType);
+
+            const keyRequest = keyStore.getAll();
+
+            keyRequest.onerror = (event) => {
+                reject(`Couldn't access keys: ${event.target.errorcode}`);
+            };
+
+            keyRequest.onsuccess = (event) => {
+                const [privKeyB64, pubKeyB64] = event.target.result;
+                const keyPair = encryptKeyPairFromB64(pubKeyB64, privKeyB64);
+
+                resolve(keyPair);
+            };
+        };
+    });
 }
