@@ -21,11 +21,11 @@ if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 class Users(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), nullable=False, unique=True)
     h_pwd = db.Column(db.String(162), nullable=False)
-    pub_sig_key = db.Column(db.String(391), nullable=False)
-    pub_encrypt_key = db.Column(db.String(391), nullable=False)
+    pub_sig_key = db.Column(db.String(736), nullable=False)
+    pub_encrypt_key = db.Column(db.String(736), nullable=False)
 
     def __init__(self, username, h_pwd, pub_sig_key, pub_encrypt_key) -> None:
         self.username = username
