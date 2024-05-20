@@ -40,7 +40,7 @@ async function decryptText(text, key) {}
 async function keyPairFromB64() {}
 
 async function generateKeypairs() {
-    const modulusLength = 2048;
+    const modulusLength = 4096;
 
     const encryptKeyPair = await window.crypto.subtle.generateKey(
         {
@@ -74,10 +74,6 @@ async function generateKeypairs() {
     document.getElementById("pub-encrypt-key").textContent = encryptPubKeyB64;
     document.getElementById("priv-encrypt-key").textContent = encryptPrivKeyB64;
 
-    const importedSigKeyPair = await sigKeyPairFromB64(sigPubKeyB64, sigPrivKeyB64);
-
-    const [sigPubKey2, sigPrivKey2] = await keyPairToB64(importedSigKeyPair);
-
     saveToDB(encryptKeyPair, sigKeyPair);
     revealCopyButtons();
 }
@@ -102,10 +98,7 @@ async function saveToDB(encryptKeyPair, sigKeyPair) {
 
     idb.onsuccess = (event) => {
         const db = event.target.result;
-        const transaction = db.transaction(
-            ["encrypt", "sig"],
-            "readwrite"
-        );
+        const transaction = db.transaction(["encrypt", "sig"], "readwrite");
         const encryptKeyPair = transaction.objectStore("encrypt");
         const sigKeyPair = transaction.objectStore("sig");
 
