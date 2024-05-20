@@ -4,18 +4,21 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import Mapped, mapped_column
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
-from os import getenv
+import os
 
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = getenv("SECRET_KEY")
+app.secret_key = os.getenv("SECRET_KEY")
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///db.sqlite3"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.permanent_session_lifetime = timedelta(hours=1)
 
 db = SQLAlchemy(app)
 
+UPLOAD_FOLDER = 'uploaded_files'
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
 class Users(db.Model):
     id = db.Column(db.Integer, primary_key=True)
