@@ -5,11 +5,13 @@
     <p>
       You are logged in as {{ session['currentUser'] }} -
       <a href="{{ url_for("logout") }}">Logout</a>
+      <a href="{{ url_for("upload_file") }}">Upload File</a>
     </p>
   {% else %}
     <p>
       <a href="{{ url_for("login") }}">Login</a> or
       <a href="{{ url_for("signup") }}">Signup</a>
     </p>
+
   {% endif %}
 {% endblock body %}
