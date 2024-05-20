@@ -102,3 +102,95 @@ async function getKeyPairFromDB(keyType) {
         };
     });
 }
+
+async function fileDataToABs(file) {
+    const fileArray = await file.arrayBuffer();
+
+    const encoder = new TextEncoder();
+    const fileNameArray = encoder.encode(file.name);
+    const fileTypeArray = encoder.encode(file.type);
+
+    return [fileArray, fileNameArray, fileTypeArray];
+}
+
+async function encryptFile(key, counter, file) {
+    const [fileAB, fileNameAB, fileTypeAB] = await fileDataToABs(file);
+
+    const encryptedFile = await window.crypto.subtle.encrypt(
+        {
+            name: "AES-CTR",
+            counter,
+            length: 64,
+        },
+        key,
+        fileAB
+    );
+
+    const encryptedFileName = await window.crypto.subtle.encrypt(
+        {
+            name: "AES-CTR",
+            counter,
+            length: 64,
+        },
+        key,
+        fileNameAB
+    );
+
+    const encryptedFileType = await window.crypto.subtle.encrypt(
+        {
+            name: "AES-CTR",
+            counter,
+            length: 64,
+        },
+        key,
+        fileTypeAB
+    );
+
+    return [encryptedFile, encryptedFileName, encryptedFileType];
+}
+
+async function decryptFile(
+    key,
+    counter,
+    encryptedFile,
+    encryptedFileName,
+    encryptedFileType
+) {
+    const decryptedFile = await window.crypto.subtle.decrypt(
+        {
+            name: "AES-CTR",
+            counter,
+            length: 64,
+        },
+        key,
+        encryptedFile
+    );
+    const decryptedFileName = await window.crypto.subtle.decrypt(
+        {
+            name: "AES-CTR",
+            counter,
+            length: 64,
+        },
+        key,
+        encryptedFileName
+    );
+    const decryptedFileType = await window.crypto.subtle.decrypt(
+        {
+            name: "AES-CTR",
+            counter,
+            length: 64,
+        },
+        key,
+        encryptedFileType
+    );
+
+    const decoder = new TextDecoder();
+    const fileName = decoder.decode(decryptedFileName);
+    const fileType = decoder.decode(decryptedFileType);
+
+    const file = new File([decryptedFile], fileName, {
+        type: fileType,
+    });
+
+    return file;
+}

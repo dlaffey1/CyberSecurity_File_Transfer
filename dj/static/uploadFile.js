@@ -74,8 +74,12 @@ async function prepareFile() {
 
     const fileKey = await generateNewKey();
 
-    const [encryptedFile, encryptedFileName, encryptedFileType, counter] =
-        await getEncryptedFile(fileKey);
+    const file = document.getElementById("file-selector").files[0];
+
+    const counter = window.crypto.getRandomValues(new Uint8Array(16));
+
+    const [encryptedFile, encryptedFileName, encryptedFileType] =
+        await encryptFile(fileKey, counter, file);
 
     const fileKeyAsArrayBuffer = await window.crypto.subtle.exportKey(
         "raw",
@@ -94,42 +98,7 @@ async function prepareFile() {
         encryptedFile
     );
 
-    const decryptedFile = await window.crypto.subtle.decrypt(
-        {
-            name: "AES-CTR",
-            counter,
-            length: 64,
-        },
-        fileKey,
-        encryptedFile
-    );
-    const decryptedFileName = await window.crypto.subtle.decrypt(
-        {
-            name: "AES-CTR",
-            counter,
-            length: 64,
-        },
-        fileKey,
-        encryptedFileName
-    );
-    const decryptedFileType = await window.crypto.subtle.decrypt(
-        {
-            name: "AES-CTR",
-            counter,
-            length: 64,
-        },
-        fileKey,
-        encryptedFileType
-    );
-    const decoder = new TextDecoder();
-    const newFileName = decoder.decode(decryptedFileName);
-    const newFileType = decoder.decode(decryptedFileType);
-
-    const newFile = new File([decryptedFile], newFileName, {
-        type: newFileType,
-    });
-
-    console.log("Decrypted File below");
+    const newFile = await decryptFile(fileKey, counter, encryptedFile, encryptedFileName, encryptedFileType);
     console.log(newFile);
 
     return [encryptedFileKey, counter, encryptedFile, fileSignature];
