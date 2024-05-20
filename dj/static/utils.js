@@ -116,35 +116,21 @@ async function fileDataToABs(file) {
 async function encryptFile(key, counter, file) {
     const [fileAB, fileNameAB, fileTypeAB] = await fileDataToABs(file);
 
-    const encryptedFile = await window.crypto.subtle.encrypt(
-        {
-            name: "AES-CTR",
-            counter,
-            length: 64,
-        },
-        key,
-        fileAB
-    );
+    const encrypt = async (data) => {
+        await window.crypto.subtle.encrypt(
+            {
+                name: "AES-CTR",
+                counter,
+                length: 64,
+            },
+            key,
+            data
+        );
+    };
 
-    const encryptedFileName = await window.crypto.subtle.encrypt(
-        {
-            name: "AES-CTR",
-            counter,
-            length: 64,
-        },
-        key,
-        fileNameAB
-    );
-
-    const encryptedFileType = await window.crypto.subtle.encrypt(
-        {
-            name: "AES-CTR",
-            counter,
-            length: 64,
-        },
-        key,
-        fileTypeAB
-    );
+    const encryptedFile = await encrypt(fileAB);
+    const encryptedFileName = await encrypt(fileNameAB);
+    const encryptedFileType = await encrypt(fileTypeAB);
 
     return [encryptedFile, encryptedFileName, encryptedFileType];
 }
@@ -156,33 +142,21 @@ async function decryptFile(
     encryptedFileName,
     encryptedFileType
 ) {
-    const decryptedFile = await window.crypto.subtle.decrypt(
-        {
-            name: "AES-CTR",
-            counter,
-            length: 64,
-        },
-        key,
-        encryptedFile
-    );
-    const decryptedFileName = await window.crypto.subtle.decrypt(
-        {
-            name: "AES-CTR",
-            counter,
-            length: 64,
-        },
-        key,
-        encryptedFileName
-    );
-    const decryptedFileType = await window.crypto.subtle.decrypt(
-        {
-            name: "AES-CTR",
-            counter,
-            length: 64,
-        },
-        key,
-        encryptedFileType
-    );
+    const decrypt = async (data) => {
+        await window.crypto.subtle.decrypt(
+            {
+                name: "AES-CTR",
+                counter,
+                length: 64,
+            },
+            key,
+            data
+        );
+    };
+
+    const decryptedFile = await decrypt(encryptedFile);
+    const decryptedFileName = await decrypt(encryptedFileName);
+    const decryptedFileType = await decrypt(encryptedFileType);
 
     const decoder = new TextDecoder();
     const fileName = decoder.decode(decryptedFileName);
