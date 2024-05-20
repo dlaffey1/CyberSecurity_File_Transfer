@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% block body %}
-  <h1>Login</h1>
-  <form action="{{ url_for("login") }}" method="post">
+  <form action="{{ url_for('login') }}" method="post">
+    <h1>Login</h1>
     <label for="username">Username:</label>
     <input type="text" id="username" name="username" required />
     <br />
@@ -11,8 +11,8 @@
     <br />
     <br />
     <input type="submit" value="Login" />
+    <p>
+      Don't have an account? <a href="{{ url_for("signup") }}">Signup here</a>
+    </p>
   </form>
-  <p>
-    Don't have an account? <a href="{{ url_for("signup") }}">Signup here</a>
-  </p>
 {% endblock body %}
