@@ -64,8 +64,8 @@ def signup():
     if request.method == "POST":
         username = request.form["username"]
         pwd = request.form["password"]
-        pub_sig_key = request.form["pub-sig-key"]
-        pub_encrypt_key = request.form["pub-encrypt-key"]
+        pub_sig_key = request.form["pub_sig_key"]
+        pub_encrypt_key = request.form["pub_encrypt_key"]
 
         h_pwd = generate_password_hash(password=pwd)
 
@@ -96,7 +96,7 @@ def login():
             return redirect(url_for("login"))
 
         if check_password_hash(user.h_pwd, pwd):
-            session["currentUser"] = user.id
+            session["current_user"] = user.id
             return redirect(url_for("index"))
         else:
             flash("Invalid credentials. Try again")
@@ -107,9 +107,7 @@ def login():
 
 @app.route("/uploadFile", methods=["GET", "POST"])
 def upload_file():
-    if session.get("currentUser", False):
-        return render_template("uploadFile.html")
-    else:
+    if not session.get("current_user", False):
         return redirect(url_for("login"))
 
 
