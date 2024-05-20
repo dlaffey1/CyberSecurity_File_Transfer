@@ -16,7 +16,10 @@
     {% endif %}
  
   {% endwith %}
-  {% if 'currentUser' in session %}You are logged in as '{{ session['currentUser'] }}'{% endif %}
+  {% if 'current_user' in session %}
+    You are logged in as '{{ session['current_user'] }}'
+    <a href="{{ url_for("logout") }}">Logout</a>
+  {% endif %}
  
   {% block body %}
  
