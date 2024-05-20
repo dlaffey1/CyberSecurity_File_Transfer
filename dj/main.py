@@ -31,6 +31,22 @@ class Users(db.Model):
         self.pub_encrypt_key = pub_encrypt_key
 
 
+class Files(db.Model):
+    file_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False, unique=True)
+    file_path = db.Column(db.String(200), nullable=False)
+    file_name = db.Column(db.Text, nullable=False)
+    file_type = db.Column(db.Text, nullable=False)
+    file_sig = db.Column(db.Text, nullable=False)
+    
+    def __init__(self, user_id, file_path, file_name, file_type, file_sig) -> None:
+        self.user_id = user_id
+        self.file_path = file_path
+        self.file_name = file_name
+        self.file_type = file_type
+        self.file_sig = file_sig
+
+
 with app.app_context():
     db.create_all()
 
