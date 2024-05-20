@@ -41,9 +41,6 @@ async function prepareFile() {
     const encryptedFile = await encryptFile(fileKey);
     const assymKeys = await getKeyPairsFromDB("encrypt");
 
-    console.log(assymKeys);
-    
-
     const encryptedFileKey = await window.crypto.subtle.wrapKey("raw", fileKey, )
 
 }
