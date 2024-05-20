@@ -36,13 +36,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }),
         });
 
-        const newFileKey = await decryptFileKey(encryptedFileKey);
-        const decryptedFileData = await decryptFileData(
-            newFileKey,
-            fileCounter,
-            encryptedFileData
-        );
-        console.log(decryptedFileData);
+        
     });
 });
 
