@@ -1,44 +1,77 @@
-<script>
-  function generateKeypair() {
-    document.getElementById('public-key').textContent = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwjMH++ruvt42t30UIlhckLTJxvSCXsyhvZMLTAqjFeE"+
-    "jX4QnNhr3D4UQaUMCiUF2A7afRpzm0oX+U4P+Xx+809VR/L9eKYCfX1mIeiBhva7zh/uOEov2jQeio1iIf5pgtZW" +
-    "1EPbMuntpnqDnWKgnpung+0KQ3oe61YUWG1gbU3NVeHTunzQxvYBXisLtxq70yvqdlCd38F7ZNdnWQQREn67W1Kn8" +
-    "WkIro176K6R2MX2ZCwcXrxbU5JMmPmKxsS0updk5vLfxc12dFOVDSMyv/Yei9ZEOFIP9Ha0SF/1C8WJwEO+h6i2avWBdZrC9MMX7aqeWI9DH+qxVc/LWT9MmwIDAQAB";
-
-    document.getElementById('copy-pub').style.display = "block";
-  }
-
-  function copyPublicKey() {
-    var publicKey = document.getElementById("public-key");
-    navigator.clipboard.writeText(publicKey.textContent);
-    alert("Public key copied to clipboard!");
-  }
-</script>
+<script src="{{url_for('static', filename='signup.js')}}"></script>
 {% extends "layout.html" %}
 {% block body %}
-  <h1>Signup</h1>
-  <form action="{{ url_for("signup") }}" method="post">
+  <form action="{{ url_for("signup") }}" method="post" class="flex-col">
+    <h1>Sign Up</h1>
+ 
     <label for="username">Username:</label>
     <input type="text" id="username" name="username" required />
-    <br />
-    <br />
+
     <label for="password">Password:</label>
     <input type="password" id="password" name="password" required />
-    <br />
-    <br />
-    <label for="public key">Public Key:</label>
-    <br>
-    <div>
-      <p type="text" id="public-key" name="public-key" required readonly></p>
-      <button type="button" onclick="copyPublicKey()" class="copy-button" id="copy-pub">Copy Key</button>
+
+    <div class="key-box">
+      <label for="pub-sig-key">Public Signing Key</label>
+      <div class="key-container">
+        <textarea type="text"
+                  id="pub-sig-key"
+                  name="pub-sig-key"
+                  class="pub-key"
+                  onkeydown="return false;"
+                  required></textarea>
+        <button type="button" class="copy-button" id="copy-pub-sig-key">Copy Key</button>
+      </div>
+ 
+      <label for="pub-encrypt-key">Public Encryption Key</label>
+      <div class="key-container">
+        <textarea type="text"
+                  id="pub-encrypt-key"
+                  name="pub-encrypt-key"
+                  class="pub-key"
+                  onkeydown="return false;"
+                  required></textarea>
+        <button type="button" class="copy-button" id="copy-pub-encrypt-key">Copy Key</button>
+      </div>
     </div>
-    <button type="button" onclick="generateKeypair()">Generate Keypair</button>
-    <br />
-    <br />
-    <input type="submit" value="Signup" />
+
+    <div>
+      <button type="button" class="show-priv" popovertarget="priv-sig-key-pop">Show Private Signing Key</button>
+      <div popover id="priv-sig-key-pop">
+        <div>
+          <label for="priv-sig-key">Private Signing Key</label>
+        </div>
+        <textarea class="priv-key" id="priv-sig-key"></textarea>
+        <div class="buttons">
+          <button type="button" class="copy-button" id="copy-priv-sig-key">Copy</button>
+          <button type="button" popovertarget="priv-sig-key-pop">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <button type="button" class="show-priv" popovertarget="priv-encrypt-key-pop">Show Private Encryption Key</button>
+      <div popover id="priv-encrypt-key-pop">
+        <div>
+          <label for="priv-encrypt-key">Private Encryption Key</label>
+        </div>
+        <textarea class="priv-key" id="priv-encrypt-key"></textarea>
+        <div class="buttons">
+          <button type="button" class="copy-button" id="copy-priv-encrypt-key">Copy</button>
+          <button type="button" popovertarget="priv-encrypt-key-pop">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <button type="button" onclick="generateKeypairs()">Generate Keypairs</button>
+    <em>Only your public keys will be submitted to the server
+      <br>
+    Both key pairs will be stored locally</em>
+    <input type="submit" class="submit" value="Sign Up" />
+    <p>
+      Already have an account? <a href="{{ url_for("login") }}">Login here</a>
+    </p>
   </form>
-  <p>
-    Already have an account? <a href="{{ url_for("login") }}">Login here</a>
-  </p>
-  <p>{{ session['hello'] }}</p>
+
+  <button onclick="testEncrypt()">Test Encrypt</button>
+  <button onclick="saveToDB()">Test Save to IndexedDB</button>
 {% endblock body %}
