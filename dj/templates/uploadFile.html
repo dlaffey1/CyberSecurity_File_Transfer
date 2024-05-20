@@ -5,7 +5,13 @@
  
     <form action="{{ url_for("upload_file") }}" id="form">
         <h1>Upload File</h1>
-        <input required type="file" id="file">
+        <input required type="file" id="file" onchange="updateLabel(event)">
+
+        <label for="file_label">File Label</label>
+        <input type="text" name="file_label" id="file_label">
+        <em>The file label will be left unencrypted for identification purposes
+            <br>
+        The file name itself will remain when downloaded</em>
 
         <input type="submit" value="Encrypt and Upload">
     </form>
