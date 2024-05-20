@@ -1,4 +1,7 @@
+import base64
 from datetime import timedelta
+import math
+import sys
 from flask import Flask, flash, redirect, render_template, request, url_for, session
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import Mapped, mapped_column
@@ -16,9 +19,10 @@ app.permanent_session_lifetime = timedelta(hours=1)
 
 db = SQLAlchemy(app)
 
-UPLOAD_FOLDER = 'uploaded_files'
+UPLOAD_FOLDER = "uploaded_files"
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
+
 
 class Users(db.Model):
     user_id = db.Column(db.Integer, primary_key=True)
@@ -41,7 +45,8 @@ class Files(db.Model):
     file_name = db.Column(db.Text, nullable=False)
     file_type = db.Column(db.Text, nullable=False)
     file_sig = db.Column(db.Text, nullable=False)
-    
+    created_at = db.Column(db.DateTime, nullable=False)
+
     def __init__(self, user_id, file_path, file_name, file_type, file_sig) -> None:
         self.user_id = user_id
         self.file_path = file_path
@@ -109,15 +114,30 @@ def login():
 def upload_file():
     if not session.get("current_user", False):
         return redirect(url_for("login"))
-    
+
     if request.method == "POST":
         user_id = session.get("current_user")
-        
+
         data = request.get_json()
-        print(data)
+        file_label = data["file_label"]
+        file_content = base64.b64decode(data["file"])
+        print(f"File Size: {convert_size(sys.getsizeof(file_content))}")
+
+        file_path = os.path.join(UPLOAD_FOLDER, file_label)
+        with open(file_path, "wb") as f:
+            f.write(file_content)
+            print(os.path.getsize(file_path))
 
     return render_template("uploadFile.html")
 
+def convert_size(size_bytes):
+   if size_bytes == 0:
+       return "0B"
+   size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+   i = int(math.floor(math.log(size_bytes, 1024)))
+   p = math.pow(1024, i)
+   s = round(size_bytes / p, 2)
+   return "%s %s" % (s, size_name[i])
 
 @app.route("/logout")
 def logout():
