@@ -1,10 +1,8 @@
 {% extends "layout.html" %}
 {% block body %}
   <h1>Welcome to the Home Page</h1>
-  {% if 'currentUser' in session %}
+  {% if 'current_user' in session %}
     <p>
-      You are logged in as {{ session['currentUser'] }} -
-      <a href="{{ url_for("logout") }}">Logout</a>
       <a href="{{ url_for("upload_file") }}">Upload File</a>
     </p>
   {% else %}
