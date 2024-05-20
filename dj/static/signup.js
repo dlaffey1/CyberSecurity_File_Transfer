@@ -23,21 +23,6 @@ function copyKey(elementId) {
     alert("Key copied to clipboard!");
 }
 
-function keyToB64(exportedKey) {
-    const arrayOfKey = new Uint8Array(exportedKey);
-    return window.btoa(String.fromCharCode(...arrayOfKey));
-}
-
-function ArrayBufferFromB64(keyInB64) {
-    const binaryString = window.atob(keyInB64);
-    const buf = new ArrayBuffer(binaryString.length);
-    const bufView = new Uint8Array(buf);
-    for (let i = 0; i < binaryString.length; i++) {
-        bufView[i] = binaryString.charCodeAt(i);
-    }
-    return buf;
-}
-
 async function encryptText(text, key) {
     const enc = new TextEncoder();
     encodedText = enc.encode(text);
@@ -52,30 +37,15 @@ async function encryptText(text, key) {
 
 async function decryptText(text, key) {}
 
-async function keyPairToB64(keyPair) {
-    const keyPubExp = await window.crypto.subtle.exportKey(
-        "spki",
-        keyPair.publicKey
-    );
-
-    const keyPrivExp = await window.crypto.subtle.exportKey(
-        "pkcs8",
-        keyPair.privateKey
-    );
-
-    return [keyToB64(keyPubExp), keyToB64(keyPrivExp)];
-}
-
 async function keyPairFromB64() {}
 
-var encryptKeyPair;
-var sigKeyPair;
-
 async function generateKeypairs() {
-    encryptKeyPair = await window.crypto.subtle.generateKey(
+    const modulusLength = 2048;
+
+    const encryptKeyPair = await window.crypto.subtle.generateKey(
         {
             name: "RSA-OAEP",
-            modulusLength: 2048,
+            modulusLength: modulusLength,
             publicExponent: new Uint8Array([1, 0, 1]),
             hash: "SHA-256",
         },
@@ -83,10 +53,10 @@ async function generateKeypairs() {
         ["encrypt", "decrypt"]
     );
 
-    sigKeyPair = await window.crypto.subtle.generateKey(
+    const sigKeyPair = await window.crypto.subtle.generateKey(
         {
             name: "RSA-PSS",
-            modulusLength: 2048,
+            modulusLength: modulusLength,
             publicExponent: new Uint8Array([1, 0, 1]),
             hash: "SHA-256",
         },
@@ -104,38 +74,12 @@ async function generateKeypairs() {
     document.getElementById("pub-encrypt-key").textContent = encryptPubKeyB64;
     document.getElementById("priv-encrypt-key").textContent = encryptPrivKeyB64;
 
-    const importedSigPubKey = await window.crypto.subtle.importKey(
-        "spki",
-        ArrayBufferFromB64(sigPubKeyB64),
-        {
-            name: "RSA-PSS",
-            hash: "SHA-256",
-        },
-        true,
-        ["verify"]
-    );
+    const importedSigKeyPair = await sigKeyPairFromB64(sigPubKeyB64, sigPrivKeyB64);
 
-    const exported2 = await window.crypto.subtle.exportKey(
-        "spki",
-        importedSigPubKey
-    );
-
-    console.log(sigPubKeyB64);
-    console.log(keyToB64(exported2));
+    const [sigPubKey2, sigPrivKey2] = await keyPairToB64(importedSigKeyPair);
 
     saveToDB(encryptKeyPair, sigKeyPair);
     revealCopyButtons();
-}
-
-async function testEncrypt() {
-    const [key64, _unused] = await keyPairToB64(encryptKeyPair);
-    const ciphertext = await encryptText("Hello", encryptKeyPair.publicKey);
-    const buf = new Uint8Array(ciphertext);
-    const bString = String.fromCharCode(...buf);
-    const b64 = window.btoa(bString);
-    console.log("As binary string", window.atob(b64));
-    console.log("To B64", b64);
-    console.log("Back to binary string", window.atob(b64));
 }
 
 async function saveToDB(encryptKeyPair, sigKeyPair) {
