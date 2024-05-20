@@ -30,8 +30,8 @@ form {
 
 .pub-key,
 .priv-key {
-  width: 570px;
-  height: 110px;
+  width: 600px;
+  height: 180px;
   overflow-wrap: break-word; /* Allow long words to be broken and wrap onto the next line */
   border: 1px solid #ccc;
   padding: 10px;
@@ -42,7 +42,7 @@ form {
 
 .priv-key {
   width: 700px;
-  height: 320px;
+  height: 600px;
 }
 
 .buttons {
