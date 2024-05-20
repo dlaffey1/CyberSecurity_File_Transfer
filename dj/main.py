@@ -86,6 +86,14 @@ def login():
     return render_template("login.html")
 
 
+@app.route("/uploadFile", methods=["GET", "POST"])
+def upload_file():
+    if session.get("currentUser", False):
+        return render_template("uploadFile.html")
+    else:
+        return redirect(url_for("login"))
+
+
 @app.route("/logout")
 def logout():
     session.pop("currentUser", None)
