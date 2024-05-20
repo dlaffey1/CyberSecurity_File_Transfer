@@ -1,0 +1,76 @@
+
+form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  [popover] {
+    height: max-content;
+    overflow-wrap: break-word;
+  }
+
+  .show-priv {
+    background-color: red;
+  }
+
+  .submit {
+    padding: 10px;
+    border-radius: 5px;
+    background-color: lightgreen;
+    font-size: large;
+    margin-top: 10px;
+  }
+
+  .submit:hover {
+    background-color: green;
+  }
+
+  .key-box {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .key-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: space-between;
+  }
+
+  .pub-key,
+  .priv-key {
+    width: 570px;
+    height: 110px;
+    overflow-wrap: break-word; /* Allow long words to be broken and wrap onto the next line */
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    resize: none;
+  }
+
+  .priv-key {
+    width: 700px;
+    height: 320px;
+  }
+
+  .buttons {
+    margin: auto;
+    width: fit-content;
+  }
+
+  .copy-button {
+    display: none;
+    background-color: #6495ed;
+    border: 0;
+    border-radius: 5px;
+    overflow-wrap: break-word;
+    width: min-content;
+  }
+
+  .copy-button:hover {
+    background-color: #345694;
+  }
