@@ -1,5 +1,5 @@
 import base64
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 import math
 from flask import (
     Flask,
@@ -51,30 +51,42 @@ class Users(db.Model):
 
 class Files(db.Model):
     file_id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, nullable=False, unique=True)
+    user_id = db.Column(db.Integer, nullable=False)
     file_path = db.Column(db.String(200), nullable=False)
+    file_label = db.Column(db.String(100), nullable=False)
     file_name = db.Column(db.Text, nullable=False)
     file_type = db.Column(db.Text, nullable=False)
     file_sig = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False)
 
-    def __init__(self, user_id, file_path, file_name, file_type, file_sig) -> None:
+    def __init__(
+        self, user_id, file_path, file_label, file_name, file_type, file_sig
+    ) -> None:
         self.user_id = user_id
         self.file_path = file_path
+        self.file_label = file_label
         self.file_name = file_name
         self.file_type = file_type
         self.file_sig = file_sig
+        self.created_at = datetime.now(timezone.utc)
+
+
+class FileKeys(db.Model):
+    key_id = db.Column(db.Integer, primary_key=True)
+    file_id = db.Column(db.Integer, nullable=False)
+    user_id = db.Column(db.Integer, nullable=False)
+    file_key = db.Column(db.Text, nullable=False)
+    file_counter = db.Column(db.Text, nullable=False)
+
+    def __init__(self, file_id, user_id, file_key, file_counter) -> None:
+        self.file_id = file_id
+        self.user_id = user_id
+        self.file_key = file_key
+        self.file_counter = file_counter
 
 
 with app.app_context():
     db.create_all()
-    
-    user = Users.query.filter_by(username="test").first()
-    if user is None:
-        test_user = Users("test", generate_password_hash("test"), "test", "test")
-
-        db.session.add(test_user)
-        db.session.commit()
 
 
 @app.errorhandler(400)
@@ -147,27 +159,70 @@ def upload_file():
         if int(data["file_size"]) > 2**30 * MAX_FILE_SIZE_IN_GB:
             abort(400, description="File is too large")
 
-        user_id = session.get("user_id")
+        try:
+            file_key = data["file_key"]
+            file_counter = data["file_counter"]
 
-        file_label = data["file_label"]
-        file_content = base64.b64decode(data["file"])
+            file_label = data["file_label"]
+            file_name = data["file_name"]
+            file_type = data["file_type"]
+            file_sig = data["file_sig"]
+            file_content = base64.b64decode(data["file"])
+        except KeyError as e:
+            abort(400, description="Missing item from payload")
 
-        file_path = os.path.join(UPLOAD_FOLDER, file_label)
+        file = db.session.execute(
+            db.select(Files)
+            .filter_by(user_id=session["user_id"])
+            .filter_by(file_label=file_label)
+        ).first()
+
+        if file is not None:
+            abort(400, description=f"File with label '{file_label}' already exists")
+
+        user_folder_path = os.path.join(UPLOAD_FOLDER, session["username"])
+        
+        if not os.path.exists(user_folder_path):
+            os.makedirs(user_folder_path)
+            
+        file_path = os.path.join(user_folder_path, file_label)
+            
         with open(file_path, "wb") as f:
             f.write(file_content)
 
+        new_file = Files(
+            user_id=session["user_id"],
+            file_path=file_path,
+            file_label=file_label,
+            file_name=file_name,
+            file_type=file_type,
+            file_sig=file_sig,
+        )
+        db.session.add(new_file)
+        db.session.commit()
+
+        new_file_key = FileKeys(
+            file_id=new_file.file_id,
+            user_id=session["user_id"],
+            file_key=file_key,
+            file_counter=file_counter,
+        )
+        db.session.add(new_file_key)
+        db.session.commit()
+
     return render_template("uploadFile.html")
+
 
 @app.route("/downloadFile", methods=["GET", "POST"])
 def download_file():
     if not session.get("user_id", False):
         return redirect(url_for("login"))
-    
+
     if request.method == "POST":
         data = request.get_json()
-        
+
         print(data)
-        
+
     return render_template("downloadFile.html")
 
 
