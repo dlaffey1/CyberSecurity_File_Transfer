@@ -52,22 +52,20 @@ class Users(db.Model):
 class Files(db.Model):
     file_id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, nullable=False)
-    file_path = db.Column(db.String(200), nullable=False)
-    file_label = db.Column(db.String(100), nullable=False)
-    file_name = db.Column(db.Text, nullable=False)
-    file_type = db.Column(db.Text, nullable=False)
-    file_sig = db.Column(db.Text, nullable=False)
+    path = db.Column(db.String(200), nullable=False)
+    label = db.Column(db.String(100), nullable=False)
+    name = db.Column(db.Text, nullable=False)
+    type = db.Column(db.Text, nullable=False)
+    sig = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False)
 
-    def __init__(
-        self, user_id, file_path, file_label, file_name, file_type, file_sig
-    ) -> None:
+    def __init__(self, user_id, path, label, name, type, sig) -> None:
         self.user_id = user_id
-        self.file_path = file_path
-        self.file_label = file_label
-        self.file_name = file_name
-        self.file_type = file_type
-        self.file_sig = file_sig
+        self.path = path
+        self.label = label
+        self.name = name
+        self.type = type
+        self.sig = sig
         self.created_at = datetime.now(timezone.utc)
 
 
@@ -75,14 +73,14 @@ class FileKeys(db.Model):
     key_id = db.Column(db.Integer, primary_key=True)
     file_id = db.Column(db.Integer, nullable=False)
     user_id = db.Column(db.Integer, nullable=False)
-    file_key = db.Column(db.Text, nullable=False)
-    file_counter = db.Column(db.Text, nullable=False)
+    key = db.Column(db.Text, nullable=False)
+    counter = db.Column(db.Text, nullable=False)
 
-    def __init__(self, file_id, user_id, file_key, file_counter) -> None:
+    def __init__(self, file_id, user_id, key, counter) -> None:
         self.file_id = file_id
         self.user_id = user_id
-        self.file_key = file_key
-        self.file_counter = file_counter
+        self.key = key
+        self.counter = counter
 
 
 with app.app_context():
@@ -174,7 +172,7 @@ def upload_file():
         file = db.session.execute(
             db.select(Files)
             .filter_by(user_id=session["user_id"])
-            .filter_by(file_label=file_label)
+            .filter_by(label=file_label)
         ).first()
 
         if file is not None:
@@ -193,11 +191,11 @@ def upload_file():
         try:
             new_file = Files(
                 user_id=session["user_id"],
-                file_path=file_path,
-                file_label=file_label,
-                file_name=file_name,
-                file_type=file_type,
-                file_sig=file_sig,
+                path=file_path,
+                label=file_label,
+                name=file_name,
+                type=file_type,
+                sig=file_sig,
             )
             db.session.add(new_file)
         except:
@@ -209,8 +207,8 @@ def upload_file():
             new_file_key = FileKeys(
                 file_id=new_file.file_id,
                 user_id=session["user_id"],
-                file_key=file_key,
-                file_counter=file_counter,
+                key=file_key,
+                counter=file_counter,
             )
             db.session.add(new_file_key)
         except:
@@ -220,23 +218,58 @@ def upload_file():
     return render_template("uploadFile.html")
 
 
-@app.route("/downloadFile", methods=["GET", "POST"])
+@app.route("/downloadFile/", methods=["GET"])
 def download_file():
+
     if not session.get("user_id", False):
         return redirect(url_for("login"))
-
-    if request.method == "POST":
-        data = request.get_json()
-
-        print(data)
 
     return render_template("downloadFile.html")
 
 
-@app.route("/currentUser")
+@app.route("/downloadFile/<file_label>", methods=["GET"])
+def download_file_by_label(file_label):
+
+    if file_label is not None:
+        user_id = session["user_id"]
+        file = db.session.execute(db.select(Files).filter_by(user_id=user_id).filter_by(label=file_label)).scalar()  # type: ignore
+
+        file_key = db.session.execute(
+            db.select(FileKeys)
+            .filter_by(user_id=user_id)
+            .filter_by(file_id=file.file_id)  # type: ignore
+        ).scalar()
+
+        user_folder_path = os.path.join(UPLOAD_FOLDER, session["username"])
+        file_path = os.path.join(user_folder_path, file_label)
+
+        with open(file_path, "rb") as f:
+            file_content = f.read()
+
+    return jsonify(
+        file=str(base64.b64encode(file_content)),
+        file_label=file_label,
+        file_name=file.name,
+        file_type=file.type,
+        file_sig=file.sig,
+        file_key=file_key.key,
+        file_counter=file_key.counter,
+    )
+
+
+@app.route("/currentUser", methods=["GET"])
 def current_user():
-    username = session.get('username', None)
+    username = session.get("username", None)
     return jsonify(username=username)
+
+
+@app.route("/files", methods=["GET"])
+def get_files():
+    user_id = session.get("user_id", None)
+    result = db.session.execute(db.select(Files.label).filter_by(user_id=user_id))  # type: ignore
+
+    file_labels = [row[0] for row in result]
+    return jsonify(file_labels=file_labels)
 
 
 @app.route("/logout")
