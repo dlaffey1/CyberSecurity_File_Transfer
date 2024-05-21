@@ -68,6 +68,13 @@ class Files(db.Model):
 
 with app.app_context():
     db.create_all()
+    
+    user = Users.query.filter_by(username="test").first()
+    if user is None:
+        test_user = Users("test", generate_password_hash("test"), "test", "test")
+
+        db.session.add(test_user)
+        db.session.commit()
 
 
 @app.errorhandler(400)
@@ -119,7 +126,8 @@ def login():
             return redirect(url_for("login"))
 
         if check_password_hash(user.h_pwd, pwd):
-            session["current_user"] = user.user_id
+            session["user_id"] = user.user_id
+            session["username"] = user.username
             return redirect(url_for("index"))
         else:
             flash("Invalid credentials. Try again")
@@ -130,7 +138,7 @@ def login():
 
 @app.route("/uploadFile", methods=["GET", "POST"])
 def upload_file():
-    if not session.get("current_user", False):
+    if not session.get("user_id", False):
         return redirect(url_for("login"))
 
     if request.method == "POST":
@@ -139,7 +147,7 @@ def upload_file():
         if int(data["file_size"]) > 2**30 * MAX_FILE_SIZE_IN_GB:
             abort(400, description="File is too large")
 
-        user_id = session.get("current_user")
+        user_id = session.get("user_id")
 
         file_label = data["file_label"]
         file_content = base64.b64decode(data["file"])
@@ -150,10 +158,22 @@ def upload_file():
 
     return render_template("uploadFile.html")
 
+@app.route("/downloadFile", methods=["GET", "POST"])
+def download_file():
+    if not session.get("user_id", False):
+        return redirect(url_for("login"))
+    
+    if request.method == "POST":
+        data = request.get_json()
+        
+        print(data)
+        
+    return render_template("downloadFile.html")
+
 
 @app.route("/logout")
 def logout():
-    session.pop("current_user", None)
+    session.pop("user_id", None)
     flash("Logged out successfully!")
     return redirect(url_for("index"))
 
