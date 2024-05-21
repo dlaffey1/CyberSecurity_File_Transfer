@@ -181,33 +181,40 @@ def upload_file():
             abort(400, description=f"File with label '{file_label}' already exists")
 
         user_folder_path = os.path.join(UPLOAD_FOLDER, session["username"])
-        
+
         if not os.path.exists(user_folder_path):
             os.makedirs(user_folder_path)
-            
+
         file_path = os.path.join(user_folder_path, file_label)
-            
+
         with open(file_path, "wb") as f:
             f.write(file_content)
 
-        new_file = Files(
-            user_id=session["user_id"],
-            file_path=file_path,
-            file_label=file_label,
-            file_name=file_name,
-            file_type=file_type,
-            file_sig=file_sig,
-        )
-        db.session.add(new_file)
+        try:
+            new_file = Files(
+                user_id=session["user_id"],
+                file_path=file_path,
+                file_label=file_label,
+                file_name=file_name,
+                file_type=file_type,
+                file_sig=file_sig,
+            )
+            db.session.add(new_file)
+        except:
+            abort(400, description="Error adding file information to DB")
+
         db.session.commit()
 
-        new_file_key = FileKeys(
-            file_id=new_file.file_id,
-            user_id=session["user_id"],
-            file_key=file_key,
-            file_counter=file_counter,
-        )
-        db.session.add(new_file_key)
+        try:
+            new_file_key = FileKeys(
+                file_id=new_file.file_id,
+                user_id=session["user_id"],
+                file_key=file_key,
+                file_counter=file_counter,
+            )
+            db.session.add(new_file_key)
+        except:
+            abort(400, description="Error adding file key information to DB")
         db.session.commit()
 
     return render_template("uploadFile.html")
@@ -224,6 +231,12 @@ def download_file():
         print(data)
 
     return render_template("downloadFile.html")
+
+
+@app.route("/currentUser")
+def current_user():
+    username = session.get('username', None)
+    return jsonify(username=username)
 
 
 @app.route("/logout")
