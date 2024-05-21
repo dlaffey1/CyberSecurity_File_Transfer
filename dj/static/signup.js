@@ -8,7 +8,71 @@ document.addEventListener("DOMContentLoaded", function () {
             copyKey(keyElementId);
         });
     }
+
+    const passwordInput = document.getElementById("password");
+    const requirementsList = document.getElementById("passwordRequirements");
+
+    passwordInput.addEventListener("blur", () => {
+        const password = passwordInput.value;
+        while (requirementsList.firstChild) {
+            requirementsList.removeChild(requirementsList.firstChild);
+        }
+
+        const { valid, requirements } = checkPasswordRequirements(password);
+
+        requirements.forEach((req) => {
+            const li = document.createElement("li");
+            li.textContent = req;
+            requirementsList.appendChild(li);
+        });
+    });
 });
+
+function checkPasswordRequirements(password) {
+    const minLength = 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasDigit = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(
+        password
+    );
+
+    let requirements = [];
+
+    if (password.length < minLength) {
+        requirements.push(
+            `Password should be at least ${minLength} characters long.`
+        );
+    }
+    if (!hasUpperCase) {
+        requirements.push(
+            "Password should contain at least one uppercase letter."
+        );
+    }
+    if (!hasLowerCase) {
+        requirements.push(
+            "Password should contain at least one lowercase letter."
+        );
+    }
+    if (!hasDigit) {
+        requirements.push("Password should contain at least one digit.");
+    }
+    if (!hasSpecialChar) {
+        requirements.push(
+            "Password should contain at least one special character."
+        );
+    }
+
+    return {
+        valid:
+            password.length >= minLength &&
+            hasUpperCase &&
+            hasLowerCase &&
+            hasDigit &&
+            hasSpecialChar,
+        requirements: requirements,
+    };
+}
 
 function revealCopyButtons() {
     const copyButtons = document.getElementsByClassName("copy-button");
@@ -22,22 +86,6 @@ function copyKey(elementId) {
     navigator.clipboard.writeText(keyContent);
     alert("Key copied to clipboard!");
 }
-
-async function encryptText(text, key) {
-    const enc = new TextEncoder();
-    encodedText = enc.encode(text);
-    return window.crypto.subtle.encrypt(
-        {
-            name: "RSA-OAEP",
-        },
-        key,
-        encodedText
-    );
-}
-
-async function decryptText(text, key) {}
-
-async function keyPairFromB64() {}
 
 async function generateKeypairs() {
     const modulusLength = 4096;
