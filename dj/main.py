@@ -247,7 +247,7 @@ def download_file_by_label(file_label):
             file_content = f.read()
 
     return jsonify(
-        file=base64.b64encode(file_content).decode('utf-8'),
+        file=base64.b64encode(file_content).decode("utf-8"),
         file_label=file_label,
         name=file.name,
         type=file.type,
@@ -255,6 +255,14 @@ def download_file_by_label(file_label):
         key=file_key.key,
         counter=file_key.counter,
     )
+
+
+@app.route("/shareFile")
+def share_file():
+    if not session.get("user_id", False):
+        return redirect(url_for("login"))
+
+    return render_template("shareFile.html")
 
 
 @app.route("/currentUser", methods=["GET"])
