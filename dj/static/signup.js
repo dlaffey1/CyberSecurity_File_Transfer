@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const passwordInput = document.getElementById("password");
     const requirementsList = document.getElementById("passwordRequirements");
+    const togglePasswordBtn = document.getElementById("togglePassword");
 
     passwordInput.addEventListener("blur", () => {
         const password = passwordInput.value;
@@ -25,6 +26,16 @@ document.addEventListener("DOMContentLoaded", function () {
             li.textContent = req;
             requirementsList.appendChild(li);
         });
+    });
+
+    togglePasswordBtn.addEventListener("click", function () {
+        const type =
+            passwordInput.getAttribute("type") === "password"
+                ? "text"
+                : "password";
+        passwordInput.setAttribute("type", type);
+        togglePasswordBtn.textContent =
+            type === "password" ? "Show Password" : "Hide Password";
     });
 });
 
