@@ -3,4 +3,4 @@
 *.sqlite3
 .prettierrc
 .djlintrc
-uploaded_files
+uploaded_files/
