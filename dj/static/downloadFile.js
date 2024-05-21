@@ -1,7 +1,5 @@
 document.addEventListener("DOMContentLoaded", async () => {
-    const fileLabels = await fetch("/files");
-    const result = await fileLabels.json();
-    const options = result.file_labels;
+    const options = await getCurrentUserFileLabels();
 
     const selectElement = document.getElementById("my_files");
 

@@ -198,3 +198,9 @@ async function getCurrentUsername() {
     const obj = await response.json();
     return obj.username;
 }
+
+async function getCurrentUserFileLabels() {
+    const fileLabels = await fetch("/files");
+    const result = await fileLabels.json();
+    return result.file_labels;
+}
