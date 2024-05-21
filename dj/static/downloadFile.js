@@ -21,7 +21,51 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 async function downloadAndDecryptFile(fileLabel) {
-    const response = await fetch("/downloadFile/" + fileLabel);
-    const request = await response.json();
-    console.log(request);
+    const response = await (await fetch("/downloadFile/" + fileLabel)).json();
+    const [encrypedFileKey, fileCounter, fileSig, encryptedFileData] =
+        unpackFileData(response);
+
+    const signatureIsValid = await verifyEncryptedFile(
+        encryptedFileData.file,
+        fileSig
+    );
+
+    if (!signatureIsValid) {
+        alert("Error: File corruption. File signature is not valid");
+        return;
+    }
+
+    const fileKey = await decryptFileKey(encrypedFileKey);
+    const file = await decryptFileData(
+        fileKey,
+        fileCounter,
+        encryptedFileData
+    );
+
+    download(file, file.name);
+}
+
+function unpackFileData(fileData) {
+    console.log(fileData);
+    return [
+        B64ToAB(fileData.file_key),
+        B64ToAB(fileData.file_counter),
+        B64ToAB(fileData.file_sig),
+        {
+            file: B64ToAB(fileData.file),
+            name: B64ToAB(fileData.file_name),
+            type: B64ToAB(fileData.file_type),
+        },
+    ];
+}
+
+async function verifyEncryptedFile(encryptedFile, signature) {
+    const sigKeyPair = await getKeyPairFromDB("sig");
+
+    return await window.crypto.subtle.verify(
+        { name: "RSA-PSS", saltLength: 32 },
+        sigKeyPair.publicKey,
+        signature,
+        encryptedFile
+    );
 }

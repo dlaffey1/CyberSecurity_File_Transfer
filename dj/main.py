@@ -247,7 +247,7 @@ def download_file_by_label(file_label):
             file_content = f.read()
 
     return jsonify(
-        file=str(base64.b64encode(file_content)),
+        file=base64.b64encode(file_content).decode('utf-8'),
         file_label=file_label,
         file_name=file.name,
         file_type=file.type,
