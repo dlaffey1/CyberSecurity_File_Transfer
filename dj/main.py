@@ -100,6 +100,9 @@ def index():
 
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
+    if session.get("user_id", False):
+        return redirect(url_for("index"))
+    
     if request.method == "POST":
         username = request.form["username"]
         pwd = request.form["password"]
