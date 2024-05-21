@@ -1,15 +1,24 @@
 import base64
 from datetime import timedelta
 import math
-import sys
-from flask import Flask, flash, redirect, render_template, request, url_for, session
+from flask import (
+    Flask,
+    abort,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
+    session,
+)
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import Mapped, mapped_column
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
+
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
@@ -20,6 +29,8 @@ app.permanent_session_lifetime = timedelta(hours=1)
 db = SQLAlchemy(app)
 
 UPLOAD_FOLDER = "uploaded_files"
+MAX_FILE_SIZE_IN_GB = 10
+
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
@@ -57,6 +68,13 @@ class Files(db.Model):
 
 with app.app_context():
     db.create_all()
+
+
+@app.errorhandler(400)
+def handle_400_error(error):
+    response = jsonify({"error": "Bad Request", "description": error.description})
+    response.status_code = 400
+    return response
 
 
 @app.route("/")
@@ -116,9 +134,13 @@ def upload_file():
         return redirect(url_for("login"))
 
     if request.method == "POST":
+        data = request.get_json()
+
+        if int(data["file_size"]) > 2**30 * MAX_FILE_SIZE_IN_GB:
+            abort(400, description="File is too large")
+
         user_id = session.get("current_user")
 
-        data = request.get_json()
         file_label = data["file_label"]
         file_content = base64.b64decode(data["file"])
 
@@ -128,20 +150,22 @@ def upload_file():
 
     return render_template("uploadFile.html")
 
-def convert_size(size_bytes):
-   if size_bytes == 0:
-       return "0B"
-   size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
-   i = int(math.floor(math.log(size_bytes, 1024)))
-   p = math.pow(1024, i)
-   s = round(size_bytes / p, 2)
-   return "%s %s" % (s, size_name[i])
 
 @app.route("/logout")
 def logout():
     session.pop("currentUser", None)
     flash("Logged out successfully!")
     return redirect(url_for("index"))
+
+
+def convert_size(size_bytes):
+    if size_bytes == 0:
+        return "0B"
+    size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+    i = int(math.floor(math.log(size_bytes, 1024)))
+    p = math.pow(1024, i)
+    s = round(size_bytes / p, 2)
+    return "%s %s" % (s, size_name[i])
 
 
 if __name__ == "__main__":
