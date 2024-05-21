@@ -13,22 +13,26 @@ from flask import (
     session,
 )
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, inspect, select
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
 
+UPLOAD_FOLDER = "uploaded_files"
+MAX_FILE_SIZE_IN_GB = 10
+DATABASE_URI = "sqlite:///db.sqlite3"
+
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///db.sqlite3"
+app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URI
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.permanent_session_lifetime = timedelta(hours=1)
 
 db = SQLAlchemy(app)
 
-UPLOAD_FOLDER = "uploaded_files"
-MAX_FILE_SIZE_IN_GB = 10
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
@@ -84,6 +88,10 @@ class FileKeys(db.Model):
 
 with app.app_context():
     db.create_all()
+    engine = db.engine
+
+Session = sessionmaker(bind=engine)
+sql_session = Session()
 
 
 @app.errorhandler(400)
@@ -102,7 +110,7 @@ def index():
 def signup():
     if session.get("user_id", False):
         return redirect(url_for("index"))
-    
+
     if request.method == "POST":
         username = request.form["username"]
         pwd = request.form["password"]
@@ -280,9 +288,12 @@ def get_files():
         return redirect(url_for("login"))
 
     user_id = session.get("user_id", None)
-    result = db.session.execute(db.select(Files.label).filter_by(user_id=user_id))  # type: ignore
 
-    file_labels = [row[0] for row in result]
+    subquery = select(FileKeys.file_id).filter_by(user_id=user_id).subquery()
+    file_labels = sql_session.execute(
+        select(Files.label).filter(Files.file_id.in_(subquery))
+    ).scalars().all()
+
     return jsonify(file_labels=file_labels)
 
 
@@ -290,7 +301,7 @@ def get_files():
 def logout():
     if not session.get("user_id", False):
         return redirect(url_for("login"))
-    
+
     session.clear()
     flash("Logged out successfully!")
     return redirect(url_for("index"))
