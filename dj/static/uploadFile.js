@@ -5,7 +5,6 @@ document.addEventListener("DOMContentLoaded", function () {
         event.preventDefault();
         const file = document.getElementById("file").files[0];
         const file_size = file.size;
-        console.log(file_size);
         const file_label = document.getElementById("file_label").value;
 
         const fileKey = await generateFileKey();
@@ -36,7 +35,14 @@ document.addEventListener("DOMContentLoaded", function () {
             }),
         });
 
-        
+        if (response.ok) {
+            alert(`File '${file_label}' uploaded successfully`);
+            form.reset();
+        } else {
+            const errorData = await response.json();
+            alert(`Error: ${errorData.description}`);
+            return;
+        }
     });
 });
 
