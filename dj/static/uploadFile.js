@@ -3,8 +3,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
-        const file = document.getElementById("file").files[0];
+        const file = document.getElementById("file_selector").files[0];
         const file_size = file.size;
+
         const file_label = document.getElementById("file_label").value;
 
         const fileKey = await generateFileKey();
@@ -79,7 +80,14 @@ async function encryptFileKey(fileKey) {
 }
 
 function updateLabel(event) {
-    const fileName = event.target.files[0].name;
+    const file = event.target.files[0];
+    if (file.size > 2**30 * 10) {
+        alert("File is too large (Maximum of 10GB)")
+        document.getElementById("file_selector").value = null;
+        return;
+    }
+
+    const fileName = file.name;
     const dotIndex = fileName.lastIndexOf(".");
     const fileNameWithoutExtension =
         dotIndex !== -1 ? fileName.substring(0, dotIndex) : fileName;
