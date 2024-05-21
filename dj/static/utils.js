@@ -104,7 +104,6 @@ async function getKeyPairFromDB(keyType) {
 
             keyRequest.onsuccess = (event) => {
                 const [privKeyB64, pubKeyB64] = event.target.result;
-                console.log(event.target.result);
                 const keyPair = keyPairFromB64(pubKeyB64, privKeyB64, keyType);
 
                 resolve(keyPair);
