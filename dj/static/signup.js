@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 function checkPasswordRequirements(password) {
-    const minLength = 8;
+    const minLength = 16;
     const hasUpperCase = /[A-Z]/.test(password);
     const hasLowerCase = /[a-z]/.test(password);
     const hasDigit = /[0-9]/.test(password);
