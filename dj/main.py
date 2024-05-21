@@ -153,7 +153,7 @@ def upload_file():
 
 @app.route("/logout")
 def logout():
-    session.pop("currentUser", None)
+    session.pop("current_user", None)
     flash("Logged out successfully!")
     return redirect(url_for("index"))
 
