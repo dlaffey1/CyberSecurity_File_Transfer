@@ -80,7 +80,10 @@ async function keyPairFromB64(publicKeyB64, privateKeyB64, keyType) {
 }
 
 async function getKeyPairFromDB(keyType) {
+    const currentUser = await getCurrentUsername();
+    
     return new Promise((resolve, reject) => {
+        const dbName = "harambe|" + currentUser;
         const idb = window.indexedDB.open("harambe");
 
         idb.onerror = (event) => {
@@ -188,4 +191,10 @@ async function decryptFileKey(encryptedFileKey) {
         true,
         ["encrypt", "decrypt"]
     );
+}
+
+async function getCurrentUsername() {
+    const response = await fetch("/currentUser");
+    const obj = await response.json();
+    return obj.username;
 }

@@ -148,7 +148,9 @@ async function saveToDB(encryptKeyPair, sigKeyPair) {
     );
     const [sigPubKeyB64, sigPrivKeyB64] = await keyPairToB64(sigKeyPair);
 
-    const idb = window.indexedDB.open("harambe");
+    const currentUser = await getCurrentUsername();
+    const db_name = "harambe|" + currentUser;
+    const idb = window.indexedDB.open(db_name);
 
     idb.onerror = (event) => {
         console.log("Couldn't open IndexedDB");
