@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const passwordInput = document.getElementById("password");
     const requirementsList = document.getElementById("passwordRequirements");
     const togglePasswordBtn = document.getElementById("togglePassword");
+    const submitBtn = document.getElementById("submit");
 
     passwordInput.addEventListener("blur", () => {
         const password = passwordInput.value;
@@ -20,6 +21,10 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         const { valid, requirements } = checkPasswordRequirements(password);
+
+        if (!valid) {
+            submitBtn.setAttribute("disabled", true);
+        }
 
         requirements.forEach((req) => {
             const li = document.createElement("li");
