@@ -1,20 +1,19 @@
 document.addEventListener("DOMContentLoaded", async () => {
-    const options = await getCurrentUserFileLabels();
+    const fileLabels = await getCurrentUserFileLabels();
+    const fileSelect = document.getElementById("file_select");
 
-    const selectElement = document.getElementById("my_files");
-
-    for (let i = 0; i < options.length; i++) {
+    for (let i = 0; i < fileLabels.length; i++) {
         const option = document.createElement("option");
-        option.value = options[i];
-        option.textContent = options[i];
-        selectElement.appendChild(option);
+        option.value = fileLabels[i];
+        option.textContent = fileLabels[i];
+        fileSelect.appendChild(option);
     }
 
     const form = document.getElementById("form");
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
 
-        downloadAndDecryptFile(selectElement.value);
+        downloadAndDecryptFile(fileSelect.value);
     });
 });
 
