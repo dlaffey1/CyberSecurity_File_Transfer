@@ -249,11 +249,11 @@ def download_file_by_label(file_label):
     return jsonify(
         file=base64.b64encode(file_content).decode('utf-8'),
         file_label=file_label,
-        file_name=file.name,
-        file_type=file.type,
-        file_sig=file.sig,
-        file_key=file_key.key,
-        file_counter=file_key.counter,
+        name=file.name,
+        type=file.type,
+        sig=file.sig,
+        key=file_key.key,
+        counter=file_key.counter,
     )
 
 
