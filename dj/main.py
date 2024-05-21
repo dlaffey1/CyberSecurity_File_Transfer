@@ -236,26 +236,29 @@ def download_file():
     return render_template("downloadFile.html")
 
 
-@app.route("/downloadFile/<file_label>", methods=["GET"])
-def download_file_by_label(file_label):
+@app.route("/downloadFile/<username>/<file_label>", methods=["GET"])
+def download_file_by_username_and_label(username, file_label):
     if not session.get("user_id", False):
         return redirect(url_for("login"))
 
-    if file_label is not None:
-        user_id = session["user_id"]
-        file = db.session.execute(db.select(Files).filter_by(user_id=user_id).filter_by(label=file_label)).scalar()  # type: ignore
+    user_id = db.session.execute(
+        db.select(Users.user_id).filter_by(username=username)
+    ).scalar()
+    print(user_id)
 
-        file_key = db.session.execute(
-            db.select(FileKeys)
-            .filter_by(user_id=user_id)
-            .filter_by(file_id=file.file_id)  # type: ignore
-        ).scalar()
+    file = db.session.execute(db.select(Files).filter_by(user_id=user_id).filter_by(label=file_label)).scalar()  # type: ignore
 
-        user_folder_path = os.path.join(UPLOAD_FOLDER, session["username"])
-        file_path = os.path.join(user_folder_path, file_label)
+    file_key = db.session.execute(
+        db.select(FileKeys)
+        .filter_by(user_id=user_id)
+        .filter_by(file_id=file.file_id)  # type: ignore
+    ).scalar()
 
-        with open(file_path, "rb") as f:
-            file_content = f.read()
+    user_folder_path = os.path.join(UPLOAD_FOLDER, session["username"])
+    file_path = os.path.join(user_folder_path, file_label)
+
+    with open(file_path, "rb") as f:
+        file_content = f.read()
 
     return jsonify(
         file=base64.b64encode(file_content).decode("utf-8"),
@@ -290,9 +293,11 @@ def get_files():
     user_id = session.get("user_id", None)
 
     subquery = select(FileKeys.file_id).filter_by(user_id=user_id).subquery()
-    file_labels = sql_session.execute(
-        select(Files.label).filter(Files.file_id.in_(subquery))
-    ).scalars().all()
+    file_labels = (
+        sql_session.execute(select(Files.label).filter(Files.file_id.in_(subquery)))
+        .scalars()
+        .all()
+    )
 
     return jsonify(file_labels=file_labels)
 

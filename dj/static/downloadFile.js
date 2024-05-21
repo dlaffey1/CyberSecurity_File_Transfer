@@ -13,12 +13,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
 
-        downloadAndDecryptFile(fileSelect.value);
+        const username = await getCurrentUsername();
+
+        downloadAndDecryptFile(username, fileSelect.value);
     });
 });
 
-async function downloadAndDecryptFile(fileLabel) {
-    const response = await (await fetch("/downloadFile/" + fileLabel)).json();
+async function downloadAndDecryptFile(username, fileLabel) {
+    const response = await (
+        await fetch(`/downloadFile/${username}/${fileLabel}`)
+    ).json();
     const [encrypedFileKey, fileCounter, fileSig, encryptedFileData] =
         unpackFileData(response);
 
@@ -33,11 +37,7 @@ async function downloadAndDecryptFile(fileLabel) {
     }
 
     const fileKey = await decryptFileKey(encrypedFileKey);
-    const file = await decryptFileData(
-        fileKey,
-        fileCounter,
-        encryptedFileData
-    );
+    const file = await decryptFileData(fileKey, fileCounter, encryptedFileData);
 
     download(file, file.name);
 }
