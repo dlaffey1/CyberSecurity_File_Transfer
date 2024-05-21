@@ -19,7 +19,6 @@ import os
 
 load_dotenv()
 
-
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///db.sqlite3"
@@ -220,7 +219,6 @@ def upload_file():
 
 @app.route("/downloadFile/", methods=["GET"])
 def download_file():
-
     if not session.get("user_id", False):
         return redirect(url_for("login"))
 
@@ -229,6 +227,8 @@ def download_file():
 
 @app.route("/downloadFile/<file_label>", methods=["GET"])
 def download_file_by_label(file_label):
+    if not session.get("user_id", False):
+        return redirect(url_for("login"))
 
     if file_label is not None:
         user_id = session["user_id"]
@@ -273,6 +273,9 @@ def current_user():
 
 @app.route("/files", methods=["GET"])
 def get_files():
+    if not session.get("user_id", False):
+        return redirect(url_for("login"))
+
     user_id = session.get("user_id", None)
     result = db.session.execute(db.select(Files.label).filter_by(user_id=user_id))  # type: ignore
 
@@ -282,6 +285,9 @@ def get_files():
 
 @app.route("/logout")
 def logout():
+    if not session.get("user_id", False):
+        return redirect(url_for("login"))
+    
     session.clear()
     flash("Logged out successfully!")
     return redirect(url_for("index"))
