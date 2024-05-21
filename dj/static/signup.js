@@ -1,3 +1,6 @@
+let encryptKeyPair;
+let sigKeyPair;
+
 document.addEventListener("DOMContentLoaded", function () {
     const copyButtons = document.getElementsByClassName("copy-button");
 
@@ -23,7 +26,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const { valid, requirements } = checkPasswordRequirements(password);
 
         if (!valid) {
-            submitBtn.setAttribute("disabled", true);
+            // submitBtn.setAttribute("disabled", true);
         }
 
         requirements.forEach((req) => {
@@ -41,6 +44,11 @@ document.addEventListener("DOMContentLoaded", function () {
         passwordInput.setAttribute("type", type);
         togglePasswordBtn.textContent =
             type === "password" ? "Show Password" : "Hide Password";
+    });
+
+    submitBtn.addEventListener("click", async () => {
+        const username = document.getElementById("username").value;
+        saveToDB(encryptKeyPair, sigKeyPair, username);
     });
 });
 
@@ -103,10 +111,10 @@ function copyKey(elementId) {
     alert("Key copied to clipboard!");
 }
 
-async function generateKeypairs() {
+async function generateKeypairs(username) {
     const modulusLength = 4096;
 
-    const encryptKeyPair = await window.crypto.subtle.generateKey(
+    encryptKeyPair = await window.crypto.subtle.generateKey(
         {
             name: "RSA-OAEP",
             modulusLength: modulusLength,
@@ -117,7 +125,7 @@ async function generateKeypairs() {
         ["encrypt", "decrypt"]
     );
 
-    const sigKeyPair = await window.crypto.subtle.generateKey(
+    sigKeyPair = await window.crypto.subtle.generateKey(
         {
             name: "RSA-PSS",
             modulusLength: modulusLength,
@@ -138,18 +146,16 @@ async function generateKeypairs() {
     document.getElementById("pub-encrypt-key").textContent = encryptPubKeyB64;
     document.getElementById("priv-encrypt-key").textContent = encryptPrivKeyB64;
 
-    saveToDB(encryptKeyPair, sigKeyPair);
     revealCopyButtons();
 }
 
-async function saveToDB(encryptKeyPair, sigKeyPair) {
+async function saveToDB(encryptKeyPair, sigKeyPair, username) {
     const [encryptPubKeyB64, encryptPrivKeyB64] = await keyPairToB64(
         encryptKeyPair
     );
     const [sigPubKeyB64, sigPrivKeyB64] = await keyPairToB64(sigKeyPair);
 
-    const currentUser = await getCurrentUsername();
-    const db_name = "harambe|" + currentUser;
+    const db_name = "harambe|" + username;
     const idb = window.indexedDB.open(db_name);
 
     idb.onerror = (event) => {

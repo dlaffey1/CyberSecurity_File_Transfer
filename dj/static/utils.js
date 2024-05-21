@@ -81,10 +81,10 @@ async function keyPairFromB64(publicKeyB64, privateKeyB64, keyType) {
 
 async function getKeyPairFromDB(keyType) {
     const currentUser = await getCurrentUsername();
-    
+
     return new Promise((resolve, reject) => {
         const dbName = "harambe|" + currentUser;
-        const idb = window.indexedDB.open("harambe");
+        const idb = window.indexedDB.open(dbName);
 
         idb.onerror = (event) => {
             console.log("Couldn't open IndexedDB");
@@ -104,6 +104,7 @@ async function getKeyPairFromDB(keyType) {
 
             keyRequest.onsuccess = (event) => {
                 const [privKeyB64, pubKeyB64] = event.target.result;
+                console.log(event.target.result);
                 const keyPair = keyPairFromB64(pubKeyB64, privKeyB64, keyType);
 
                 resolve(keyPair);

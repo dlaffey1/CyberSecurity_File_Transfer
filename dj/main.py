@@ -241,7 +241,7 @@ def current_user():
 
 @app.route("/logout")
 def logout():
-    session.pop("user_id", None)
+    session.clear()
     flash("Logged out successfully!")
     return redirect(url_for("index"))
 
