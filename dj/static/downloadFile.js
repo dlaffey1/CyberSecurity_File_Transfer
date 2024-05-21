@@ -46,7 +46,6 @@ async function downloadAndDecryptFile(fileLabel) {
 }
 
 function unpackFileData(fileData) {
-    console.log(fileData);
     return [
         B64ToAB(fileData.key),
         B64ToAB(fileData.counter),
