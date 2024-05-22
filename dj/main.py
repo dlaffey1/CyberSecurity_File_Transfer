@@ -54,7 +54,8 @@ class User(Base):
     pub_sig_key: Mapped[str] = mapped_column(String(736), nullable=False)
     pub_encrypt_key: Mapped[str] = mapped_column(String(736), nullable=False)
 
-    files: Mapped[List["File"]] = relationship()
+    files: Mapped[List["File"]] = relationship(back_populates="user")
+    file_keys: Mapped[List["FileKey"]] = relationship(back_populates="user")
 
 
 class File(Base):
@@ -71,8 +72,8 @@ class File(Base):
     sig: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
-    user: Mapped["User"] = relationship()
-    keys: Mapped["FileKey"]  = relationship()
+    user: Mapped["User"] = relationship(back_populates="files")
+    file_keys: Mapped["FileKey"] = relationship(back_populates="file")
 
     __table_args__ = (UniqueConstraint("user_id", "label", name="unique_file"),)
 
@@ -81,12 +82,17 @@ class FileKey(Base):
     __tablename__ = "file_keys"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    file_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    file_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("files.id"), nullable=False
+    )
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=False
+    )
     key: Mapped[str] = mapped_column(Text, nullable=False)
     counter: Mapped[str] = mapped_column(Text, nullable=False)
-    
-    
+
+    file: Mapped["File"] = relationship(back_populates="file_keys")
+    user: Mapped["User"] = relationship(back_populates="file_keys")
 
 
 engine = create_engine(DATABASE_URI)
@@ -289,10 +295,20 @@ def get_files():
     if not session.get("user_id", False):
         return redirect(url_for("login"))
 
-    stmt = select(File.label).join(File.user).where(User.id.is_(session["user_id"]))
+    current_user_id = session["user_id"]
+
+    stmt = select(File.label).join(File.user).where(User.id.is_(current_user_id))
     owned_files = db_session.scalars(stmt).all()
 
-    return jsonify(file_labels=owned_files)
+    stmt = (
+        select(File.label)
+        .join(File.file_keys)
+        .where(FileKey.user_id.is_(current_user_id))
+        .where(File.user_id.is_not(current_user_id))
+    )
+    received_files = db_session.scalars(stmt).all()
+
+    return jsonify(owned_files=owned_files, received_files=received_files)
 
 
 @app.route("/logout")

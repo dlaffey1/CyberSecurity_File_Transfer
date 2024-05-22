@@ -202,5 +202,6 @@ async function getCurrentUsername() {
 async function getCurrentUserFileLabels() {
     const fileLabels = await fetch("/files");
     const result = await fileLabels.json();
-    return result.file_labels;
+    console.log(result);
+    return result.owned_files;
 }
