@@ -1,6 +1,7 @@
 import base64
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 import math
+from typing import List
 from flask import (
     Flask,
     abort,
@@ -21,8 +22,9 @@ from sqlalchemy import (
     func,
     select,
     UniqueConstraint,
+    ForeignKey,
 )
-from sqlalchemy.orm import Mapped, DeclarativeBase, Session, mapped_column
+from sqlalchemy.orm import Mapped, DeclarativeBase, Session, mapped_column, relationship
 from sqlalchemy.exc import IntegrityError
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
@@ -52,18 +54,25 @@ class User(Base):
     pub_sig_key: Mapped[str] = mapped_column(String(736), nullable=False)
     pub_encrypt_key: Mapped[str] = mapped_column(String(736), nullable=False)
 
+    files: Mapped[List["File"]] = relationship()
+
 
 class File(Base):
     __tablename__ = "files"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=False
+    )
     path: Mapped[str] = mapped_column(String(200), nullable=False)
     label: Mapped[str] = mapped_column(String(100), nullable=False)
     name: Mapped[str] = mapped_column(Text, nullable=False)
     type: Mapped[str] = mapped_column(Text, nullable=False)
     sig: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    user: Mapped["User"] = relationship()
+    keys: Mapped["FileKey"]  = relationship()
 
     __table_args__ = (UniqueConstraint("user_id", "label", name="unique_file"),)
 
@@ -76,6 +85,8 @@ class FileKey(Base):
     user_id: Mapped[int] = mapped_column(Integer, nullable=False)
     key: Mapped[str] = mapped_column(Text, nullable=False)
     counter: Mapped[str] = mapped_column(Text, nullable=False)
+    
+    
 
 
 engine = create_engine(DATABASE_URI)
@@ -233,7 +244,6 @@ def download_file_by_username_and_label(username, file_label):
     user_id = db.session.execute(
         db.select(User.id).filter_by(username=username)
     ).scalar()
-    print(user_id)
 
     file = db.session.execute(
         db.select(Files).filter_by(user_id=user_id).filter_by(label=file_label)
@@ -279,16 +289,10 @@ def get_files():
     if not session.get("user_id", False):
         return redirect(url_for("login"))
 
-    user_id = session.get("user_id", None)
+    stmt = select(File.label).join(File.user).where(User.id.is_(session["user_id"]))
+    owned_files = db_session.scalars(stmt).all()
 
-    subquery = select(FileKeys.file_id).filter_by(user_id=user_id).subquery()
-    file_labels = (
-        sql_session.execute(select(Files.label).filter(Files.id.in_(subquery)))
-        .scalars()
-        .all()
-    )
-
-    return jsonify(file_labels=file_labels)
+    return jsonify(file_labels=owned_files)
 
 
 @app.route("/logout")
