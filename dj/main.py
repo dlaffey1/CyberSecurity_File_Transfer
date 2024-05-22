@@ -14,7 +14,10 @@ from flask import (
 )
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine, inspect, select
+from sqlalchemy import DateTime, Integer, String, Text, create_engine, inspect, select
+from sqlalchemy.orm import Mapped, MappedAsDataclass
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import DeclarativeBase
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 import os
@@ -23,44 +26,38 @@ load_dotenv()
 
 UPLOAD_FOLDER = "uploaded_files"
 MAX_FILE_SIZE_IN_GB = 10
-DATABASE_URI = "sqlite:///db.sqlite3"
+DATABASE_URI = "sqlite:///instance/db.sqlite3"
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
-app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URI
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.permanent_session_lifetime = timedelta(hours=1)
 
-db = SQLAlchemy(app)
+
+class Base(DeclarativeBase):
+    pass
 
 
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
+    h_pwd: Mapped[str] = mapped_column(String(162), nullable=False)
+    pub_sig_key: Mapped[str] = mapped_column(String(736), nullable=False)
+    pub_encrypt_key: Mapped[str] = mapped_column(String(736), nullable=False)
 
 
-class Users(db.Model):
-    user_id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(100), nullable=False, unique=True)
-    h_pwd = db.Column(db.String(162), nullable=False)
-    pub_sig_key = db.Column(db.String(736), nullable=False)
-    pub_encrypt_key = db.Column(db.String(736), nullable=False)
+class Files(Base):
+    __tablename__ = "files"
 
-    def __init__(self, username, h_pwd, pub_sig_key, pub_encrypt_key) -> None:
-        self.username = username
-        self.h_pwd = h_pwd
-        self.pub_sig_key = pub_sig_key
-        self.pub_encrypt_key = pub_encrypt_key
-
-
-class Files(db.Model):
-    file_id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, nullable=False)
-    path = db.Column(db.String(200), nullable=False)
-    label = db.Column(db.String(100), nullable=False)
-    name = db.Column(db.Text, nullable=False)
-    type = db.Column(db.Text, nullable=False)
-    sig = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    path: Mapped[str] = mapped_column(String(200), nullable=False)
+    label: Mapped[str] = mapped_column(String(100), nullable=False)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    type: Mapped[str] = mapped_column(Text, nullable=False)
+    sig: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
     def __init__(self, user_id, path, label, name, type, sig) -> None:
         self.user_id = user_id
@@ -72,26 +69,22 @@ class Files(db.Model):
         self.created_at = datetime.now(timezone.utc)
 
 
-class FileKeys(db.Model):
-    key_id = db.Column(db.Integer, primary_key=True)
-    file_id = db.Column(db.Integer, nullable=False)
-    user_id = db.Column(db.Integer, nullable=False)
-    key = db.Column(db.Text, nullable=False)
-    counter = db.Column(db.Text, nullable=False)
+class FileKeys(Base):
+    __tablename__ = "file_keys"
 
-    def __init__(self, file_id, user_id, key, counter) -> None:
-        self.file_id = file_id
-        self.user_id = user_id
-        self.key = key
-        self.counter = counter
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    file_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    key: Mapped[str] = mapped_column(Text, nullable=False)
+    counter: Mapped[str] = mapped_column(Text, nullable=False)
 
 
-with app.app_context():
-    db.create_all()
-    engine = db.engine
+engine = create_engine(DATABASE_URI)
+Base.metadata.create_all(engine)
 
-Session = sessionmaker(bind=engine)
-sql_session = Session()
+
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
 
 @app.errorhandler(400)
@@ -119,7 +112,7 @@ def signup():
 
         h_pwd = generate_password_hash(password=pwd)
 
-        new_user = Users(
+        new_user = User(
             username=username,
             h_pwd=h_pwd,
             pub_sig_key=pub_sig_key,
@@ -140,13 +133,13 @@ def login():
         username = request.form["username"]
         pwd = request.form["password"]
 
-        user = Users.query.filter_by(username=username).first()
+        user = User.query.filter_by(username=username).scalar()
         if user is None:
             flash("Invalid credentials. Try again")
             return redirect(url_for("login"))
 
         if check_password_hash(user.h_pwd, pwd):
-            session["user_id"] = user.user_id
+            session["user_id"] = user.id
             session["username"] = user.username
             return redirect(url_for("index"))
         else:
@@ -215,7 +208,7 @@ def upload_file():
 
         try:
             new_file_key = FileKeys(
-                file_id=new_file.file_id,
+                file_id=new_file.id,
                 user_id=session["user_id"],
                 key=file_key,
                 counter=file_counter,
@@ -242,16 +235,16 @@ def download_file_by_username_and_label(username, file_label):
         return redirect(url_for("login"))
 
     user_id = db.session.execute(
-        db.select(Users.user_id).filter_by(username=username)
+        db.select(User.id).filter_by(username=username)
     ).scalar()
     print(user_id)
 
-    file = db.session.execute(db.select(Files).filter_by(user_id=user_id).filter_by(label=file_label)).scalar()  # type: ignore
+    file = db.session.execute(
+        db.select(Files).filter_by(user_id=user_id).filter_by(label=file_label)
+    ).scalar()
 
     file_key = db.session.execute(
-        db.select(FileKeys)
-        .filter_by(user_id=user_id)
-        .filter_by(file_id=file.file_id)  # type: ignore
+        db.select(FileKeys).filter_by(user_id=user_id).filter_by(file_id=file.id)
     ).scalar()
 
     user_folder_path = os.path.join(UPLOAD_FOLDER, session["username"])
@@ -294,7 +287,7 @@ def get_files():
 
     subquery = select(FileKeys.file_id).filter_by(user_id=user_id).subquery()
     file_labels = (
-        sql_session.execute(select(Files.label).filter(Files.file_id.in_(subquery)))
+        sql_session.execute(select(Files.label).filter(Files.id.in_(subquery)))
         .scalars()
         .all()
     )
