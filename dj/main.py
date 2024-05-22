@@ -134,8 +134,10 @@ def login():
     if request.method == "POST":
         username = request.form["username"]
         pwd = request.form["password"]
+        
+        stmt = select(User).where(User.username.is_(username))
 
-        user = User.query.filter_by(username=username).scalar()
+        user = db_session.scalar(stmt)
         if user is None:
             flash("Invalid credentials. Try again")
             return redirect(url_for("login"))
