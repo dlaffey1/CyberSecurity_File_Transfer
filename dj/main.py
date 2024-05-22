@@ -57,6 +57,9 @@ class User(Base):
     files: Mapped[List["File"]] = relationship(back_populates="user")
     file_keys: Mapped[List["FileKey"]] = relationship(back_populates="user")
 
+    def __repr__(self):
+        return f"User(id={self.id!r})"
+
 
 class File(Base):
     __tablename__ = "files"
@@ -77,6 +80,9 @@ class File(Base):
 
     __table_args__ = (UniqueConstraint("user_id", "label", name="unique_file"),)
 
+    def __repr__(self):
+        return f"File(id={self.id!r})"
+
 
 class FileKey(Base):
     __tablename__ = "file_keys"
@@ -93,6 +99,9 @@ class FileKey(Base):
 
     file: Mapped["File"] = relationship(back_populates="file_keys")
     user: Mapped["User"] = relationship(back_populates="file_keys")
+
+    def __repr__(self):
+        return f"FileKey(id={self.id!r})"
 
 
 engine = create_engine(DATABASE_URI)
@@ -247,17 +256,33 @@ def download_file_by_username_and_label(username, file_label):
     if not session.get("user_id", False):
         return redirect(url_for("login"))
 
-    user_id = db.session.execute(
-        db.select(User.id).filter_by(username=username)
-    ).scalar()
+    stmt = (
+        select(File)
+        .join(File.user)
+        .join(File.file_keys)
+        .where(User.username.is_(username))
+        .where(File.label.is_(file_label))
+        .where(FileKey.user_id.is_(session["user_id"]))
+    )
+    file = db_session.scalar(stmt)
 
-    file = db.session.execute(
-        db.select(Files).filter_by(user_id=user_id).filter_by(label=file_label)
-    ).scalar()
+    if file is None:
+        abort(
+            400, f"No file uploaded by '{username}' with label '{file_label}'"
+        )
 
-    file_key = db.session.execute(
-        db.select(FileKeys).filter_by(user_id=user_id).filter_by(file_id=file.id)
-    ).scalar()
+    stmt = (
+        select(FileKey)
+        .where(FileKey.user_id.is_(session["user_id"]))
+        .where(FileKey.file_id.is_(file.id))
+    )
+    file_key = db_session.scalar(stmt)
+    
+    if file_key is None:
+        abort(
+            400, f"No file decryption key found for user {session["username"]}"
+        )
+    
 
     user_folder_path = os.path.join(UPLOAD_FOLDER, session["username"])
     file_path = os.path.join(user_folder_path, file_label)
