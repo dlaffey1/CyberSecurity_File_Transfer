@@ -12,7 +12,16 @@ from flask import (
     url_for,
     session,
 )
-from sqlalchemy import DateTime, Integer, String, Text, create_engine, select
+from sqlalchemy import (
+    DateTime,
+    Integer,
+    String,
+    Text,
+    create_engine,
+    func,
+    select,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, DeclarativeBase, Session, mapped_column
 from sqlalchemy.exc import IntegrityError
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -21,7 +30,7 @@ import os
 
 load_dotenv()
 
-UPLOAD_FOLDER = "uploaded_files"
+UPLOAD_FOLDER = "instance/uploaded_files"
 MAX_FILE_SIZE_IN_GB = 10
 DATABASE_URI = "sqlite:///instance/db.sqlite3"
 
@@ -44,7 +53,7 @@ class User(Base):
     pub_encrypt_key: Mapped[str] = mapped_column(String(736), nullable=False)
 
 
-class Files(Base):
+class File(Base):
     __tablename__ = "files"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -54,19 +63,12 @@ class Files(Base):
     name: Mapped[str] = mapped_column(Text, nullable=False)
     type: Mapped[str] = mapped_column(Text, nullable=False)
     sig: Mapped[str] = mapped_column(Text, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
-    def __init__(self, user_id, path, label, name, type, sig) -> None:
-        self.user_id = user_id
-        self.path = path
-        self.label = label
-        self.name = name
-        self.type = type
-        self.sig = sig
-        self.created_at = datetime.now(timezone.utc)
+    __table_args__ = (UniqueConstraint("user_id", "label", name="unique_file"),)
 
 
-class FileKeys(Base):
+class FileKey(Base):
     __tablename__ = "file_keys"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -79,10 +81,6 @@ class FileKeys(Base):
 engine = create_engine(DATABASE_URI)
 Base.metadata.create_all(engine)
 db_session = Session(engine)
-
-
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
 
 
 @app.errorhandler(400)
@@ -118,7 +116,7 @@ def signup():
             )
             db_session.add(new_user)
             db_session.commit()
-        except IntegrityError as e:
+        except IntegrityError:
             flash(f"The username '{username}' is taken")
             db_session.rollback()
             return render_template("signup.html")
@@ -134,10 +132,10 @@ def login():
     if request.method == "POST":
         username = request.form["username"]
         pwd = request.form["password"]
-        
-        stmt = select(User).where(User.username.is_(username))
 
+        stmt = select(User).where(User.username.is_(username))
         user = db_session.scalar(stmt)
+
         if user is None:
             flash("Invalid credentials. Try again")
             return redirect(url_for("login"))
@@ -161,9 +159,6 @@ def upload_file():
     if request.method == "POST":
         data = request.get_json()
 
-        if int(data["file_size"]) > 2**30 * MAX_FILE_SIZE_IN_GB:
-            abort(400, description="File is too large")
-
         try:
             file_key = data["file_key"]
             file_counter = data["file_counter"]
@@ -171,32 +166,23 @@ def upload_file():
             file_label = data["file_label"]
             file_name = data["file_name"]
             file_type = data["file_type"]
+            file_size = data["file_size"]
             file_sig = data["file_sig"]
             file_content = base64.b64decode(data["file"])
         except KeyError as e:
-            abort(400, description="Missing item from payload")
+            abort(400, description=f"Missing item from payload: {e}")
 
-        file = db.session.execute(
-            db.select(Files)
-            .filter_by(user_id=session["user_id"])
-            .filter_by(label=file_label)
-        ).first()
-
-        if file is not None:
-            abort(400, description=f"File with label '{file_label}' already exists")
+        if int(file_size) > 2**30 * MAX_FILE_SIZE_IN_GB:
+            abort(400, description="File is too large")
 
         user_folder_path = os.path.join(UPLOAD_FOLDER, session["username"])
-
         if not os.path.exists(user_folder_path):
             os.makedirs(user_folder_path)
 
         file_path = os.path.join(user_folder_path, file_label)
 
-        with open(file_path, "wb") as f:
-            f.write(file_content)
-
         try:
-            new_file = Files(
+            file = File(
                 user_id=session["user_id"],
                 path=file_path,
                 label=file_label,
@@ -204,23 +190,29 @@ def upload_file():
                 type=file_type,
                 sig=file_sig,
             )
-            db.session.add(new_file)
-        except:
-            abort(400, description="Error adding file information to DB")
 
-        db.session.commit()
+            db_session.add(file)
+            db_session.commit()
+        except IntegrityError:
+            db_session.rollback()
+            abort(400, description=f"File with label '{file_label}' already exists")
+
+        with open(file_path, "wb") as f:
+            f.write(file_content)
 
         try:
-            new_file_key = FileKeys(
-                file_id=new_file.id,
+            new_file_key = FileKey(
+                file_id=file.id,
                 user_id=session["user_id"],
                 key=file_key,
                 counter=file_counter,
             )
-            db.session.add(new_file_key)
+
+            db_session.add(new_file_key)
+            db_session.commit()
         except:
+            db_session.rollback()
             abort(400, description="Error adding file key information to DB")
-        db.session.commit()
 
     return render_template("uploadFile.html")
 
