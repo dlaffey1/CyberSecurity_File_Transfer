@@ -120,6 +120,7 @@ def signup():
             db_session.commit()
         except IntegrityError as e:
             flash(f"The username '{username}' is taken")
+            db_session.rollback()
             return render_template("signup.html")
 
         flash(f"User {username} successfully registered")
