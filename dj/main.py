@@ -12,12 +12,9 @@ from flask import (
     url_for,
     session,
 )
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import DateTime, Integer, String, Text, create_engine, inspect, select
-from sqlalchemy.orm import Mapped, MappedAsDataclass
-from sqlalchemy.orm import mapped_column
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy import DateTime, Integer, String, Text, create_engine, select
+from sqlalchemy.orm import Mapped, DeclarativeBase, Session, mapped_column
+from sqlalchemy.exc import IntegrityError
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 import os
@@ -81,6 +78,7 @@ class FileKeys(Base):
 
 engine = create_engine(DATABASE_URI)
 Base.metadata.create_all(engine)
+db_session = Session(engine)
 
 
 if not os.path.exists(UPLOAD_FOLDER):
@@ -111,15 +109,18 @@ def signup():
         pub_encrypt_key = request.form["pub_encrypt_key"]
 
         h_pwd = generate_password_hash(password=pwd)
-
-        new_user = User(
-            username=username,
-            h_pwd=h_pwd,
-            pub_sig_key=pub_sig_key,
-            pub_encrypt_key=pub_encrypt_key,
-        )
-        db.session.add(new_user)
-        db.session.commit()
+        try:
+            new_user = User(
+                username=username,
+                h_pwd=h_pwd,
+                pub_sig_key=pub_sig_key,
+                pub_encrypt_key=pub_encrypt_key,
+            )
+            db_session.add(new_user)
+            db_session.commit()
+        except IntegrityError as e:
+            flash(f"The username '{username}' is taken")
+            return render_template("signup.html")
 
         flash(f"User {username} successfully registered")
         return redirect(url_for("login"))
