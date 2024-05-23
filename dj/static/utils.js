@@ -13,6 +13,16 @@ function ABToB64(arrayBuffer) {
     return window.btoa(fullString);
 }
 
+function B64ToAB(stringInB64) {
+    const binaryString = window.atob(stringInB64);
+    const buf = new ArrayBuffer(binaryString.length);
+    const bufView = new Uint8Array(buf);
+    for (let i = 0; i < binaryString.length; i++) {
+        bufView[i] = binaryString.charCodeAt(i);
+    }
+    return buf;
+}
+
 async function keyPairToB64(keyPair) {
     const keyPubExp = await window.crypto.subtle.exportKey(
         "spki",
@@ -26,17 +36,6 @@ async function keyPairToB64(keyPair) {
 
     return [ABToB64(keyPubExp), ABToB64(keyPrivExp)];
 }
-
-function B64ToAB(stringInB64) {
-    const binaryString = window.atob(stringInB64);
-    const buf = new ArrayBuffer(binaryString.length);
-    const bufView = new Uint8Array(buf);
-    for (let i = 0; i < binaryString.length; i++) {
-        bufView[i] = binaryString.charCodeAt(i);
-    }
-    return buf;
-}
-
 async function keyPairFromB64(publicKeyB64, privateKeyB64, keyType) {
     let usages, algorithm;
 
