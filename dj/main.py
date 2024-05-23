@@ -384,7 +384,7 @@ def get_pub_key(key_type, username):
     if key_type == "sig":
         stmt = select(User.pub_sig_key).where(User.username.is_(username))
     elif key_type == "encrypt":
-        stmt = select(User.pub_sig_key).where(User.username.is_(username))
+        stmt = select(User.pub_encrypt_key).where(User.username.is_(username))
     else:
         return jsonify(msg="Invalid key type, valid options: ['sig', 'encrypt']"), 400
 
