@@ -17,7 +17,9 @@ document.addEventListener("DOMContentLoaded", function () {
             file
         );
         const fileSig = await signEncryptedFile(encryptedFileData.file);
-        const encryptedFileKey = await encryptFileKey(fileKey);
+
+        const encryptKeyPair = await getKeyPairFromDB("encrypt");
+        const encryptedFileKey = await encryptFileKey(fileKey, encryptKeyPair.publicKey);
 
         const response = await fetch("/uploadFile", {
             method: "POST",
@@ -65,17 +67,6 @@ async function signEncryptedFile(encryptedFile) {
         { name: "RSA-PSS", saltLength: 32 },
         sigKeyPair.privateKey,
         encryptedFile
-    );
-}
-
-async function encryptFileKey(fileKey) {
-    const encryptKeyPair = await getKeyPairFromDB("encrypt");
-
-    const fileKeyAB = await window.crypto.subtle.exportKey("raw", fileKey);
-    return await window.crypto.subtle.encrypt(
-        { name: "RSA-OAEP" },
-        encryptKeyPair.publicKey,
-        fileKeyAB
     );
 }
 

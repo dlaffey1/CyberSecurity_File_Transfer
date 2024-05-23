@@ -176,6 +176,15 @@ async function decryptFileData(key, counter, encryptedFileData) {
     return file;
 }
 
+async function encryptFileKey(fileKey, publicKey) {
+    const fileKeyAB = await window.crypto.subtle.exportKey("raw", fileKey);
+    return await window.crypto.subtle.encrypt(
+        { name: "RSA-OAEP" },
+        publicKey,
+        fileKeyAB
+    );
+}
+
 async function decryptFileKey(encryptedFileKey) {
     const encryptKeyPair = await getKeyPairFromDB("encrypt");
 
