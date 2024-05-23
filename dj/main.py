@@ -100,8 +100,10 @@ class FileKey(Base):
     file: Mapped["File"] = relationship(back_populates="file_keys")
     user: Mapped["User"] = relationship(back_populates="file_keys")
 
-    __table_args__ = (UniqueConstraint("user_id", "file_id", name="unique_user_file_pair"),)
-    
+    __table_args__ = (
+        UniqueConstraint("user_id", "file_id", name="unique_user_file_pair"),
+    )
+
     def __repr__(self):
         return f"FileKey(id={self.id!r})"
 
@@ -113,7 +115,7 @@ db_session = Session(engine)
 
 @app.errorhandler(400)
 def handle_400_error(error):
-    response = jsonify({"error": "Bad Request", "description": error.description})
+    response = jsonify({"error": "Bad Request", "description": error})
     response.status_code = 400
     return response
 
@@ -269,9 +271,7 @@ def download_file_by_username_and_label(username, file_label):
     file = db_session.scalar(stmt)
 
     if file is None:
-        abort(
-            400, f"No file uploaded by '{username}' with label '{file_label}'"
-        )
+        abort(400, f"No file uploaded by '{username}' with label '{file_label}'")
 
     stmt = (
         select(FileKey)
@@ -279,12 +279,9 @@ def download_file_by_username_and_label(username, file_label):
         .where(FileKey.file_id.is_(file.id))
     )
     file_key = db_session.scalar(stmt)
-    
+
     if file_key is None:
-        abort(
-            400, f"No file decryption key found for user {session["username"]}"
-        )
-    
+        abort(400, f"No file decryption key found for user {session['username']}")
 
     user_folder_path = os.path.join(UPLOAD_FOLDER, session["username"])
     file_path = os.path.join(user_folder_path, file_label)
@@ -315,7 +312,7 @@ def share_file():
 def share_file_key():
     if not session.get("user_id", False):
         return redirect(url_for("login"))
-    
+
     data = request.get_json()
     try:
         username = data["recipient_username"]
@@ -324,15 +321,14 @@ def share_file_key():
         counter = data["counter"]
     except KeyError as e:
         abort(400, description=f"Missing item from payload: {e}")
-    
+
     stmt = select(User.id).where(User.username.is_(username))
     user_id = db_session.scalar(stmt)
-    
+
     if user_id is None:
         flash(f"No user with username '{username}'")
         abort(400, f"No user with username '{username}'")
-        
-        
+
     stmt = (
         select(File.id)
         .join(File.user)
@@ -340,26 +336,47 @@ def share_file_key():
         .where(User.id.is_(session["user_id"]))
     )
     file_id = db_session.scalar(stmt)
-    
+
     if file_id is None:
         flash(f"Something went wrong when retrieving the file '{label}'")
         abort(400, f"No file with label '{label}'")
-        
-    
+
     file_key = FileKey(file_id=file_id, user_id=user_id, key=key, counter=counter)
-    
+
     try:
         db_session.add(file_key)
         db_session.commit()
     except IntegrityError:
         db_session.rollback()
-        err_msg = f"A key for file labeled '{label}' already belongs to user '{username}'"
+        err_msg = (
+            f"A key for file labeled '{label}' already belongs to user '{username}'"
+        )
         flash(err_msg)
         abort(400, err_msg)
-    
+
     flash(f"File labeled '{label}' was successfully shared with user '{username}'")
 
     return render_template("shareFile.html")
+
+
+@app.route("/getMyFileKey/<file_label>", methods=["GET"])
+def get_file_key(file_label):
+    if not session.get("user_id", False):
+        return jsonify(msg="User not logged in"), 400
+
+    stmt = (
+        select(FileKey.key, FileKey.counter)
+        .join(FileKey.file)
+        .where(FileKey.user_id.is_(session["user_id"]))
+        .where(File.label.is_(file_label))
+    )
+    key, counter = db_session.execute(stmt).first() or (None, None)
+
+    if key is not None:
+        return jsonify(msg="Key not found"), 400
+
+    return jsonify(key=key, counter=counter)
+
 
 @app.route("/currentUser", methods=["GET"])
 def current_user():
