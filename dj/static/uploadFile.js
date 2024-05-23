@@ -44,7 +44,6 @@ document.addEventListener("DOMContentLoaded", function () {
         } else {
             const errorData = await response.json();
             alert(`Error: ${errorData.description}`);
-            return;
         }
     });
 });
