@@ -320,7 +320,7 @@ def share_file_key():
         key = data["encrypted_key"]
         counter = data["counter"]
     except KeyError as e:
-        abort(400, description=f"Missing item from payload: {e}")
+        return jsonify(msg=f"Missing item from payload: {e}"), 400
 
     stmt = select(User.id).where(User.username.is_(username))
     user_id = db_session.scalar(stmt)
@@ -363,6 +363,7 @@ def share_file_key():
 def get_file_key(file_label):
     if not session.get("user_id", False):
         return jsonify(msg="User not logged in"), 400
+    
 
     stmt = (
         select(FileKey.key, FileKey.counter)
@@ -372,10 +373,27 @@ def get_file_key(file_label):
     )
     key, counter = db_session.execute(stmt).first() or (None, None)
 
-    if key is not None:
+    if key is None:
         return jsonify(msg="Key not found"), 400
 
     return jsonify(key=key, counter=counter)
+
+
+@app.route("/getPublicKey/<key_type>/<username>", methods=["GET"])
+def get_pub_key(key_type, username):
+    if key_type == "sig":
+        stmt = select(User.pub_sig_key).where(User.username.is_(username))
+    elif key_type == "encrypt":
+        stmt = select(User.pub_sig_key).where(User.username.is_(username))
+    else:
+        return jsonify(msg="Invalid key type, valid options: ['sig', 'encrypt']"), 400
+
+    key = db_session.scalar(stmt)
+
+    if key is None:
+        return jsonify(msg=f"User with username {username} not found"), 400
+
+    return jsonify(key=key)
 
 
 @app.route("/currentUser", methods=["GET"])
