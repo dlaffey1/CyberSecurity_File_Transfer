@@ -190,7 +190,7 @@ async function decryptFileKey(encryptedFileKey) {
     const fileKeyAB = await window.crypto.subtle.decrypt(
         { name: "RSA-OAEP" },
         encryptKeyPair.privateKey,
-        B64ToAB(encryptedFileKey)
+        encryptedFileKey
     );
     return await window.crypto.subtle.importKey(
         "raw",
