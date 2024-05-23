@@ -208,9 +208,8 @@ async function getCurrentUsername() {
     return obj.username;
 }
 
-async function getCurrentUserFileLabels() {
-    const fileLabels = await fetch("/files");
-    const result = await fileLabels.json();
-    console.log(result);
-    return result.owned_files;
+async function getFileLists() {
+    const file_lists = await fetch("/files");
+    return await file_lists.json();
+}
 }

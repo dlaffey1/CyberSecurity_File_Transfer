@@ -409,19 +409,23 @@ def get_files():
 
     current_user_id = session["user_id"]
 
-    stmt = select(File.label).join(File.user).where(User.id.is_(current_user_id))
-    owned_files = db_session.scalars(stmt).all()
+    stmt = select(User.username, File.label).join(File.user).where(User.id.is_(current_user_id))
+    data = db_session.execute(stmt).all()
+    owned_files = [{'owner': u, 'label': l} for u, l in data]
 
     stmt = (
-        select(File.label)
+        select(User.username,File.label)
+        .join(File.user)
         .join(File.file_keys)
         .where(FileKey.user_id.is_(current_user_id))
         .where(File.user_id.is_not(current_user_id))
     )
-    received_files = db_session.scalars(stmt).all()
+    data = db_session.execute(stmt).all()
+    received_files = [{'owner': u, 'label': l} for u, l in data]
+    
+    all_files = owned_files + received_files
 
-    return jsonify(owned_files=owned_files, received_files=received_files)
-
+    return jsonify(owned_files=owned_files, received_files=received_files, all_files=all_files)
 
 @app.route("/logout")
 def logout():

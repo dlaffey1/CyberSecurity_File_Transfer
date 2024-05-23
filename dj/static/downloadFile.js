@@ -1,11 +1,12 @@
 document.addEventListener("DOMContentLoaded", async () => {
-    const fileLabels = await getCurrentUserFileLabels();
+    const fileLists = await getFileLists();
     const fileSelect = document.getElementById("file_select");
+    const allFiles = fileLists.all_files;
 
-    for (let i = 0; i < fileLabels.length; i++) {
+    for (let i = 0; i < allFiles.length; i++) {
         const option = document.createElement("option");
-        option.value = fileLabels[i];
-        option.textContent = fileLabels[i];
+        option.value = i;
+        option.textContent = `${allFiles[i].label} - ${allFiles[i].owner}`;
         fileSelect.appendChild(option);
     }
 
@@ -13,9 +14,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
 
-        const username = await getCurrentUsername();
-
-        downloadAndDecryptFile(username, fileSelect.value);
+        const fileIndex = fileSelect.value;
+        downloadAndDecryptFile(
+            allFiles[fileIndex].owner,
+            allFiles[fileIndex].label
+        );
     });
 });
 

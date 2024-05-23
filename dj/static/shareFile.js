@@ -1,13 +1,14 @@
 document.addEventListener("DOMContentLoaded", async () => {
-    const fileLabels = await getCurrentUserFileLabels();
+    const fileLists = await getFileLists();
     const fileSelect = document.getElementById("file_select");
+    const owned_files = fileLists.owned_files;
 
-    fileLabels.forEach((label) => {
+    for (let i = 0; i < owned_files.length; i++) {
         const option = document.createElement("option");
-        option.value = label;
-        option.textContent = label;
+        option.value = owned_files[i].label;
+        option.textContent = owned_files[i].label;
         fileSelect.appendChild(option);
-    });
+    }
 
     const form = document.getElementById("form");
     form.addEventListener("submit", handleSubmit);
