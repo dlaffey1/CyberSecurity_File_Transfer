@@ -29,9 +29,12 @@ async function downloadAndDecryptFile(username, fileLabel) {
     const [encrypedFileKey, fileCounter, fileSig, encryptedFileData] =
         unpackFileData(response);
 
+    const publicKey = await getPublicKey(username, "sig");
+
     const signatureIsValid = await verifyEncryptedFile(
         encryptedFileData.file,
-        fileSig
+        fileSig,
+        publicKey
     );
 
     if (!signatureIsValid) {
@@ -58,12 +61,10 @@ function unpackFileData(fileData) {
     ];
 }
 
-async function verifyEncryptedFile(encryptedFile, signature) {
-    const sigKeyPair = await getKeyPairFromDB("sig");
-
+async function verifyEncryptedFile(encryptedFile, signature, publicKey) {
     return await window.crypto.subtle.verify(
         { name: "RSA-PSS", saltLength: 32 },
-        sigKeyPair.publicKey,
+        publicKey,
         signature,
         encryptedFile
     );
