@@ -25,7 +25,9 @@ async function handleSubmit(event) {
     const fileKeyResponse = await fetch(`/getMyFileKey/${fileLabel}`);
 
     if (!fileKeyResponse.ok) {
-        alert("Something went wrong");
+        const error = await fileKeyResponse.json();
+        alert(`Something went wrong ${error.msg}`);
+        return;
     }
 
     const fileKeyData = await fileKeyResponse.json();
