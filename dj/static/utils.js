@@ -1,7 +1,3 @@
-function hello() {
-    console.log("Hello World!");
-}
-
 function ABToB64(arrayBuffer) {
     let fullString = "";
     const bytes = new Uint8Array(arrayBuffer);
