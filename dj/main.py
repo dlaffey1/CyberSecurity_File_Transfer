@@ -283,7 +283,7 @@ def download_file_by_username_and_label(username, file_label):
     if file_key is None:
         abort(400, f"No file decryption key found for user {session['username']}")
 
-    user_folder_path = os.path.join(UPLOAD_FOLDER, session["username"])
+    user_folder_path = os.path.join(UPLOAD_FOLDER, username)
     file_path = os.path.join(user_folder_path, file_label)
 
     with open(file_path, "rb") as f:
