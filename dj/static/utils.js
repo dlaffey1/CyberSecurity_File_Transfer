@@ -211,4 +211,32 @@ async function getFileLists() {
     const file_lists = await fetch("/files");
     return await file_lists.json();
 }
+
+async function getPublicKey(username, keyType) {
+    const publicKeyResponse = await (
+        await fetch(`/getPublicKey/${keyType}/${username}`)
+    ).json();
+    const publicKeyB64 = publicKeyResponse["key"];
+
+    let name, usages;
+    if (keyType == "encrypt") {
+        name = "RSA-OAEP";
+        usages = ["encrypt"];
+    } else if (keyType == "sig") {
+        name = "RSA-PSS";
+        usages = ["verify"];
+    } else {
+        throw new Error("Key type is invalid");
+    }
+
+    return await window.crypto.subtle.importKey(
+        "spki",
+        B64ToAB(publicKeyB64),
+        {
+            name: name,
+            hash: "SHA-256",
+        },
+        true,
+        usages
+    );
 }

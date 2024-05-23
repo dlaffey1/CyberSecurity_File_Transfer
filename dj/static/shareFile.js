@@ -34,24 +34,9 @@ async function handleSubmit(event) {
 
     const fileKey = await decryptFileKey(fileKeyData["key"]);
     const counter = fileKeyData["counter"];
+    const recipientPublicKey = await getPublicKey(recipentUsername, "encrypt");
 
-    const publicKeyResponse = await (
-        await fetch(`/getPublicKey/encrypt/${recipentUsername}`)
-    ).json();
-    const publicKeyB64 = publicKeyResponse["key"];
-
-    const publicKey = await window.crypto.subtle.importKey(
-        "spki",
-        B64ToAB(publicKeyB64),
-        {
-            name: "RSA-OAEP",
-            hash: "SHA-256",
-        },
-        true,
-        ["encrypt"]
-    );
-
-    const encryptedFileKey = await encryptFileKey(fileKey, publicKey);
+    const encryptedFileKey = await encryptFileKey(fileKey, recipientPublicKey);
 
     const response = await fetch("/shareFileKey", {
         method: "POST",
