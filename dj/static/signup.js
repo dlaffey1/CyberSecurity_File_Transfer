@@ -2,6 +2,31 @@ let encryptKeyPair;
 let sigKeyPair;
 
 document.addEventListener("DOMContentLoaded", function () {
+    addHiddenCopyButtons();
+    addPasswordRequirements();
+
+    const passwordInput = document.getElementById("password");
+    const togglePasswordBtn = document.getElementById("togglePassword");
+
+    togglePasswordBtn.addEventListener("click", function () {
+        const type =
+            passwordInput.getAttribute("type") === "password"
+                ? "text"
+                : "password";
+        passwordInput.setAttribute("type", type);
+        togglePasswordBtn.textContent =
+            type === "password" ? "Show Password" : "Hide Password";
+    });
+
+    const submitBtn = document.getElementById("submit");
+
+    submitBtn.addEventListener("click", async () => {
+        const username = document.getElementById("username").value;
+        saveToDB(encryptKeyPair, sigKeyPair, username);
+    });
+});
+
+function addHiddenCopyButtons() {
     const copyButtons = document.getElementsByClassName("copy-button");
 
     for (let button of copyButtons) {
@@ -11,12 +36,11 @@ document.addEventListener("DOMContentLoaded", function () {
             copyKey(keyElementId);
         });
     }
+}
 
+function addPasswordRequirements() {
     const passwordInput = document.getElementById("password");
     const requirementsList = document.getElementById("passwordRequirements");
-    const togglePasswordBtn = document.getElementById("togglePassword");
-    const submitBtn = document.getElementById("submit");
-
     passwordInput.addEventListener("blur", () => {
         const password = passwordInput.value;
         while (requirementsList.firstChild) {
@@ -35,22 +59,7 @@ document.addEventListener("DOMContentLoaded", function () {
             requirementsList.appendChild(li);
         });
     });
-
-    togglePasswordBtn.addEventListener("click", function () {
-        const type =
-            passwordInput.getAttribute("type") === "password"
-                ? "text"
-                : "password";
-        passwordInput.setAttribute("type", type);
-        togglePasswordBtn.textContent =
-            type === "password" ? "Show Password" : "Hide Password";
-    });
-
-    submitBtn.addEventListener("click", async () => {
-        const username = document.getElementById("username").value;
-        saveToDB(encryptKeyPair, sigKeyPair, username);
-    });
-});
+}
 
 function checkPasswordRequirements(password) {
     const minLength = 16;
