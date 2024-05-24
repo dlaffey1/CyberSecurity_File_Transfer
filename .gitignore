@@ -1,0 +1,6 @@
+.vscode
+.env
+*.sqlite3
+.prettierrc
+.djlintrc
+uploaded_files/

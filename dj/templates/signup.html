@@ -1,0 +1,78 @@
+<script src="{{url_for('static', filename='signup.js')}}"></script>
+
+{% extends "layout.html" %}
+{% block body %}
+  <form action="{{ url_for("signup") }}" method="post" class="flex-col">
+    <h1>Sign Up</h1>
+ 
+    <label for="username">Username:</label>
+    <input type="text" id="username" name="username" required />
+
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password" required />
+    <button type="button" id="togglePassword">Show Password</button>
+    <ul id="passwordRequirements">
+    </ul>
+
+    <div class="key-box">
+      <label for="pub-sig-key">Public Signing Key</label>
+      <div class="key-container">
+        <textarea type="text"
+                  id="pub-sig-key"
+                  name="pub_sig_key"
+                  class="pub-key"
+                  onkeydown="return false;"
+                  required></textarea>
+        <button type="button" class="copy-button" id="copy-pub-sig-key">Copy Key</button>
+      </div>
+ 
+      <label for="pub-encrypt-key">Public Encryption Key</label>
+      <div class="key-container">
+        <textarea type="text"
+                  id="pub-encrypt-key"
+                  name="pub_encrypt_key"
+                  class="pub-key"
+                  onkeydown="return false;"
+                  required></textarea>
+        <button type="button" class="copy-button" id="copy-pub-encrypt-key">Copy Key</button>
+      </div>
+    </div>
+
+    <div>
+      <button type="button" class="show-priv" popovertarget="priv-sig-key-pop">Show Private Signing Key</button>
+      <div popover id="priv-sig-key-pop">
+        <div>
+          <label for="priv-sig-key">Private Signing Key</label>
+        </div>
+        <textarea class="priv-key" id="priv-sig-key"></textarea>
+        <div class="buttons">
+          <button type="button" class="copy-button" id="copy-priv-sig-key">Copy</button>
+          <button type="button" popovertarget="priv-sig-key-pop">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <button type="button" class="show-priv" popovertarget="priv-encrypt-key-pop">Show Private Encryption Key</button>
+      <div popover id="priv-encrypt-key-pop">
+        <div>
+          <label for="priv-encrypt-key">Private Encryption Key</label>
+        </div>
+        <textarea class="priv-key" id="priv-encrypt-key"></textarea>
+        <div class="buttons">
+          <button type="button" class="copy-button" id="copy-priv-encrypt-key">Copy</button>
+          <button type="button" popovertarget="priv-encrypt-key-pop">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <button type="button" onclick="generateKeypairs()">Generate Keypairs</button>
+    <em>Only your public keys will be submitted to the server
+      <br>
+    Both key pairs will be stored locally</em>
+    <input type="submit" value="Sign Up" id="submit" />
+    <p>
+      Already have an account? <a href="{{ url_for("login") }}">Login here</a>
+    </p>
+  </form>
+{% endblock body %}

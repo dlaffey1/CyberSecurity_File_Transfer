@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<head>
+  <title>Harambe</title>
+  <link href="{{ url_for('static', filename='global.css') }}"
+        rel="stylesheet" />
+
+  <script src="{{url_for('static', filename='utils.js')}}"></script>
+</head>
+<body>
+  {% with messages = get_flashed_messages() %}
+ 
+    {% if messages %}
+      <ul class="flashes">
+        {% for message in messages %}<li>{{ message }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+ 
+  {% endwith %}
+  {% if 'user_id' in session %}
+    You are logged in as '{{ session['username'] }}'
+    <a href="{{ url_for("logout") }}">Logout</a>
+    <a href="{{ url_for("index") }}">Home</a>
+    <a href="{{ url_for("upload_file") }}">Upload File</a>
+    <a href="{{ url_for("download_file") }}">Download File</a>
+    <a href="{{ url_for("share_file") }}">Share File</a>
+  {% endif %}
+ 
+  {% block body %}
+ 
+  {% endblock body %}
+</body>
