@@ -32,7 +32,7 @@ async function handleSubmit(event) {
 
     const fileKeyData = await fileKeyResponse.json();
 
-    const fileKey = await decryptFileKey(fileKeyData["key"]);
+    const fileKey = await decryptFileKey(B64ToAB(fileKeyData["key"]));
     const counter = fileKeyData["counter"];
     const recipientPublicKey = await getPublicKey(recipentUsername, "encrypt");
 
