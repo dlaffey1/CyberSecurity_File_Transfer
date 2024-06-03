@@ -74,19 +74,19 @@ async function keyPairFromB64(publicKeyB64, privateKeyB64, keyType) {
     };
 }
 
-async function saveKeyPairsToDB(
-    encryptKeyPair,
-    sigKeyPair,
+async function savePrivKeysToDB(
+    encryptPrivKey,
+    sigPrivKey,
     username,
     password
 ) {
     const encryptKeySalt = window.crypto.getRandomValues(new Uint8Array(16));
     const encryptKeyCounter = window.crypto.getRandomValues(new Uint8Array(16));
-    const wrappedEncryptPrivKey = await wrapPrivateKey(encryptKeyPair.privateKey, password, encryptKeySalt, encryptKeyCounter);
+    const wrappedEncryptPrivKey = await wrapPrivateKey(encryptPrivKey, password, encryptKeySalt, encryptKeyCounter);
 
     const sigKeySalt = window.crypto.getRandomValues(new Uint8Array(16));
     const sigKeyCounter = window.crypto.getRandomValues(new Uint8Array(16));
-    const wrappedSigPrivKey = await wrapPrivateKey(sigKeyPair.privateKey, password, encryptKeySalt, encryptKeyCounter);
+    const wrappedSigPrivKey = await wrapPrivateKey(sigPrivKey, password, encryptKeySalt, encryptKeyCounter);
 
     const db_name = "harambe|" + username;
     const idb = window.indexedDB.open(db_name);

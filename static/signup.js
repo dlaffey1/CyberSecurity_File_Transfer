@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     submitBtn.addEventListener("click", async () => {
         const username = document.getElementById("username").value;
-        saveKeyPairsToDB(encryptKeyPair, sigKeyPair, username);
+        savePrivKeysToDB(encryptKeyPair.privateKey, sigKeyPair.privateKey, username);
     });
 });
 
