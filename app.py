@@ -1,36 +1,26 @@
 import base64
-from datetime import datetime, timedelta
 import math
-from typing import List
-from flask import (
-    Flask,
-    abort,
-    flash,
-    jsonify,
-    redirect,
-    render_template,
-    request,
-    url_for,
-    session,
-)
-from sqlalchemy import (
-    DateTime,
-    Integer,
-    String,
-    Text,
-    create_engine,
-    func,
-    select,
-    UniqueConstraint,
-    ForeignKey,
-)
-from sqlalchemy.orm import Mapped, DeclarativeBase, Session, mapped_column, relationship
-from sqlalchemy.exc import IntegrityError
-from werkzeug.security import generate_password_hash, check_password_hash
-from dotenv import load_dotenv
 import os
+import secrets
+from datetime import datetime, timedelta
+from typing import List
 
-load_dotenv()
+from dotenv import load_dotenv
+from flask import (Flask, abort, flash, jsonify, redirect, render_template,
+                   request, session, url_for)
+from sqlalchemy import (DateTime, ForeignKey, Integer, String, Text,
+                        UniqueConstraint, create_engine, func, select)
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import (DeclarativeBase, Mapped, Session, mapped_column,
+                            relationship)
+from werkzeug.security import check_password_hash, generate_password_hash
+
+if not load_dotenv():
+    print("No env variables file found, generating secret key automatically...")
+    secret_key = secrets.token_hex()
+    with open(".env", "w") as env_file:
+        env_file.write(f"SECRET_KEY = '{secret_key}'")
+    print("Secret key generated")
 
 UPLOAD_FOLDER = "instance/uploaded_files"
 MAX_FILE_SIZE_IN_GB = 10
