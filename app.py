@@ -15,7 +15,7 @@ from flask import (
     render_template,
     request,
     session,
-    url_for,
+    url_for as original_url_for,
 )
 from sqlalchemy import (
     DateTime,
@@ -36,17 +36,20 @@ if not load_dotenv():
     print("No env variables found, generating env variables automatically...")
     secret_key = secrets.token_hex()
     with open(".env", "w") as env_file:
-        env_file.write(f"SECRET_KEY = '{secret_key}'")
-        env_file.write(f"HOST = '127.0.0.1'")
-    print("Secret key generated")
+        env_file.writelines([f"SECRET_KEY = '{secret_key}'\n", "HOST = '127.0.0.1'\n", "URL_PREFIX = ''\n"])
+    print(".env generated")
 
 UPLOAD_FOLDER = "instance/uploaded_files"
 MAX_FILE_SIZE_IN_GB = 10
 DATABASE_URI = "sqlite:///instance/db.sqlite3"
 
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY")
 app.permanent_session_lifetime = timedelta(hours=1)
+app.secret_key = os.getenv("SECRET_KEY")
+app.config["URL_PREFIX"] = os.getenv("URL_PREFIX")
+
+with open("./static/constants.js", "w") as file:
+    file.write(f"const URL_PREFIX = '{app.config["URL_PREFIX"]}'")
 
 
 class Base(DeclarativeBase):
@@ -119,6 +122,16 @@ class FileKey(Base):
 engine = create_engine(DATABASE_URI)
 Base.metadata.create_all(engine)
 db_session = Session(engine)
+
+
+def url_for(endpoint, **values):
+    url = original_url_for(endpoint, **values)
+    return f"{app.config['URL_PREFIX']}{url}"
+
+
+@app.context_processor
+def override_url_for():
+    return dict(url_for=url_for)
 
 
 @app.errorhandler(400)
