@@ -36,7 +36,14 @@ if not load_dotenv():
     print("No env variables found, generating env variables automatically...")
     secret_key = secrets.token_hex()
     with open(".env", "w") as env_file:
-        env_file.writelines([f"SECRET_KEY = '{secret_key}'\n", "HOST = '127.0.0.1'\n", "URL_PREFIX = ''\n"])
+        env_file.writelines(
+            [
+                f"SECRET_KEY = '{secret_key}'\n",
+                "HOST = '127.0.0.1'\n",
+                "PORT = '5000'\n",
+                "URL_PREFIX = ''\n",
+            ]
+        )
     print(".env generated")
 
 UPLOAD_FOLDER = "instance/uploaded_files"
@@ -49,7 +56,8 @@ app.secret_key = os.getenv("SECRET_KEY")
 app.config["URL_PREFIX"] = os.getenv("URL_PREFIX")
 
 with open("./static/constants.js", "w") as file:
-    file.write(f"const URL_PREFIX = '{app.config["URL_PREFIX"]}'")
+    url_prefix = os.getenv("URL_PREFIX")
+    file.write(f"const URL_PREFIX = '{url_prefix}'")
 
 
 class Base(DeclarativeBase):
@@ -475,4 +483,4 @@ def convert_size(size_bytes):
 
 
 if __name__ == "__main__":
-    app.run(host=os.getenv("HOST"), port=2016, debug=True)
+    app.run(host=os.getenv("HOST"), port=int(os.getenv("PORT")), debug=True)  # type: ignore
