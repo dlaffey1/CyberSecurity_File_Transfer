@@ -13,21 +13,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     const form = document.getElementById("form");
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
+        const keyPassword = document.getElementById("keyPassword").value;
 
         const fileIndex = fileSelect.value;
-        downloadAndDecryptFile(
+        await downloadAndDecryptFile(
             allFiles[fileIndex].owner,
-            allFiles[fileIndex].label
+            allFiles[fileIndex].label,
+            keyPassword
         );
     });
 });
 
-async function downloadAndDecryptFile(username, fileLabel) {
+async function downloadAndDecryptFile(username, fileLabel, keyPassword) {
     const response = await (
-        await fetch(`/downloadFile/${username}/${fileLabel}`)
+        await fetch(`${URL_PREFIX}/downloadFile/${username}/${fileLabel}`)
     ).json();
     const [encrypedFileKey, fileCounter, fileSig, encryptedFileData] =
-        unpackFileData(response);
+        unpackFileInfoFromResponse(response);
 
     const publicKey = await getPublicKey(username, "sig");
 
@@ -42,30 +44,31 @@ async function downloadAndDecryptFile(username, fileLabel) {
         return;
     }
 
-    const fileKey = await decryptFileKey(encrypedFileKey);
+    let encryptPrivKey;
+    try {
+        encryptPrivKey = await getPrivKeyFromDB("encrypt", keyPassword);
+    } catch {
+        alert(
+            "Couldn't retrive private key. Please re-enter key wrapping password"
+        );
+        return;
+    }
+
+    const fileKey = await decryptFileKey(encrypedFileKey, encryptPrivKey);
     const file = await decryptFileData(fileKey, fileCounter, encryptedFileData);
 
     download(file, file.name);
 }
 
-function unpackFileData(fileData) {
+function unpackFileInfoFromResponse(response) {
     return [
-        B64ToAB(fileData.key),
-        B64ToAB(fileData.counter),
-        B64ToAB(fileData.sig),
+        B64ToAB(response.key),
+        B64ToAB(response.counter),
+        B64ToAB(response.sig),
         {
-            file: B64ToAB(fileData.file),
-            name: B64ToAB(fileData.name),
-            type: B64ToAB(fileData.type),
+            file: B64ToAB(response.file),
+            name: B64ToAB(response.name),
+            type: B64ToAB(response.type),
         },
     ];
-}
-
-async function verifyEncryptedFile(encryptedFile, signature, publicKey) {
-    return await window.crypto.subtle.verify(
-        { name: "RSA-PSS", saltLength: 32 },
-        publicKey,
-        signature,
-        encryptedFile
-    );
 }

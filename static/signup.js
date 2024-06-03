@@ -18,11 +18,13 @@ document.addEventListener("DOMContentLoaded", function () {
             type === "password" ? "Show Password" : "Hide Password";
     });
 
-    const submitBtn = document.getElementById("submit");
+    const form = document.getElementById("form");
 
-    submitBtn.addEventListener("click", async () => {
+    form.addEventListener("submit", async () => {
         const username = document.getElementById("username").value;
-        saveToDB(encryptKeyPair, sigKeyPair, username);
+        const keyPassword = document.getElementById("keyPassword").value;
+        console.log("Key password",keyPassword);
+        savePrivKeysToDB(encryptKeyPair.privateKey, sigKeyPair.privateKey, username, keyPassword);
     });
 });
 
@@ -156,37 +158,4 @@ async function generateKeypairs(username) {
     document.getElementById("priv-encrypt-key").textContent = encryptPrivKeyB64;
 
     revealCopyButtons();
-}
-
-async function saveToDB(encryptKeyPair, sigKeyPair, username) {
-    const [encryptPubKeyB64, encryptPrivKeyB64] = await keyPairToB64(
-        encryptKeyPair
-    );
-    const [sigPubKeyB64, sigPrivKeyB64] = await keyPairToB64(sigKeyPair);
-
-    const db_name = "harambe|" + username;
-    const idb = window.indexedDB.open(db_name);
-
-    idb.onerror = (event) => {
-        console.log("Couldn't open IndexedDB");
-    };
-
-    idb.onupgradeneeded = (event) => {
-        const db = event.target.result;
-        db.createObjectStore("encrypt");
-        db.createObjectStore("sig");
-    };
-
-    idb.onsuccess = (event) => {
-        const db = event.target.result;
-        const transaction = db.transaction(["encrypt", "sig"], "readwrite");
-        const encryptKeyPair = transaction.objectStore("encrypt");
-        const sigKeyPair = transaction.objectStore("sig");
-
-        encryptKeyPair.put(encryptPubKeyB64, "public");
-        encryptKeyPair.put(encryptPrivKeyB64, "private");
-
-        sigKeyPair.put(sigPubKeyB64, "public");
-        sigKeyPair.put(sigPrivKeyB64, "private");
-    };
 }

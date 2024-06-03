@@ -1,7 +1,11 @@
 import base64
-from datetime import datetime, timedelta
 import math
+import os
+import secrets
+from datetime import datetime, timedelta
 from typing import List
+
+from dotenv import load_dotenv
 from flask import (
     Flask,
     abort,
@@ -10,35 +14,36 @@ from flask import (
     redirect,
     render_template,
     request,
-    url_for,
     session,
+    url_for as original_url_for,
 )
 from sqlalchemy import (
     DateTime,
+    ForeignKey,
     Integer,
     String,
     Text,
+    UniqueConstraint,
     create_engine,
     func,
     select,
-    UniqueConstraint,
-    ForeignKey,
 )
-from sqlalchemy.orm import Mapped, DeclarativeBase, Session, mapped_column, relationship
 from sqlalchemy.exc import IntegrityError
-from werkzeug.security import generate_password_hash, check_password_hash
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
+from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, relationship
+from werkzeug.security import check_password_hash, generate_password_hash
 
 UPLOAD_FOLDER = "instance/uploaded_files"
 MAX_FILE_SIZE_IN_GB = 10
 DATABASE_URI = "sqlite:///instance/db.sqlite3"
 
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY")
 app.permanent_session_lifetime = timedelta(hours=1)
+app.secret_key = os.getenv("SECRET_KEY")
+app.config["URL_PREFIX"] = os.getenv("URL_PREFIX")
+
+with open("./static/constants.js", "w") as file:
+    url_prefix = os.getenv("URL_PREFIX")
+    file.write(f"const URL_PREFIX = '{url_prefix}'")
 
 
 class Base(DeclarativeBase):
@@ -73,6 +78,7 @@ class File(Base):
     name: Mapped[str] = mapped_column(Text, nullable=False)
     type: Mapped[str] = mapped_column(Text, nullable=False)
     sig: Mapped[str] = mapped_column(Text, nullable=False)
+    counter: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     user: Mapped["User"] = relationship(back_populates="files")
@@ -95,7 +101,6 @@ class FileKey(Base):
         Integer, ForeignKey("users.id"), nullable=False
     )
     key: Mapped[str] = mapped_column(Text, nullable=False)
-    counter: Mapped[str] = mapped_column(Text, nullable=False)
 
     file: Mapped["File"] = relationship(back_populates="file_keys")
     user: Mapped["User"] = relationship(back_populates="file_keys")
@@ -111,6 +116,16 @@ class FileKey(Base):
 engine = create_engine(DATABASE_URI)
 Base.metadata.create_all(engine)
 db_session = Session(engine)
+
+
+def url_for(endpoint, **values):
+    url = original_url_for(endpoint, **values)
+    return f"{app.config['URL_PREFIX']}{url}"
+
+
+@app.context_processor
+def override_url_for():
+    return dict(url_for=url_for)
 
 
 @app.errorhandler(400)
@@ -191,13 +206,13 @@ def upload_file():
 
         try:
             file_key = data["file_key"]
-            file_counter = data["file_counter"]
 
             file_label = data["file_label"]
             file_name = data["file_name"]
             file_type = data["file_type"]
             file_size = data["file_size"]
             file_sig = data["file_sig"]
+            file_counter = data["file_counter"]
             file_content = base64.b64decode(data["file"])
         except KeyError as e:
             abort(400, description=f"Missing item from payload: {e}")
@@ -219,6 +234,7 @@ def upload_file():
                 name=file_name,
                 type=file_type,
                 sig=file_sig,
+                counter=file_counter,
             )
 
             db_session.add(file)
@@ -235,7 +251,6 @@ def upload_file():
                 file_id=file.id,
                 user_id=session["user_id"],
                 key=file_key,
-                counter=file_counter,
             )
 
             db_session.add(new_file_key)
@@ -295,8 +310,8 @@ def download_file_by_username_and_label(username, file_label):
         name=file.name,
         type=file.type,
         sig=file.sig,
+        counter=file.counter,
         key=file_key.key,
-        counter=file_key.counter,
     )
 
 
@@ -318,7 +333,6 @@ def share_file_key():
         username = data["recipient_username"]
         label = data["file_label"]
         key = data["encrypted_key"]
-        counter = data["counter"]
     except KeyError as e:
         return jsonify(msg=f"Missing item from payload: {e}"), 400
 
@@ -341,7 +355,7 @@ def share_file_key():
         flash(f"Something went wrong when retrieving the file '{label}'")
         abort(400, f"No file with label '{label}'")
 
-    file_key = FileKey(file_id=file_id, user_id=user_id, key=key, counter=counter)
+    file_key = FileKey(file_id=file_id, user_id=user_id, key=key)
 
     try:
         db_session.add(file_key)
@@ -363,10 +377,9 @@ def share_file_key():
 def get_file_key(file_label):
     if not session.get("user_id", False):
         return jsonify(msg="User not logged in"), 400
-    
 
     stmt = (
-        select(FileKey.key, FileKey.counter)
+        select(FileKey.key, File.counter)
         .join(FileKey.file)
         .where(FileKey.user_id.is_(session["user_id"]))
         .where(File.label.is_(file_label))
@@ -409,23 +422,30 @@ def get_files():
 
     current_user_id = session["user_id"]
 
-    stmt = select(User.username, File.label).join(File.user).where(User.id.is_(current_user_id))
+    stmt = (
+        select(User.username, File.label)
+        .join(File.user)
+        .where(User.id.is_(current_user_id))
+    )
     data = db_session.execute(stmt).all()
-    owned_files = [{'owner': u, 'label': l} for u, l in data]
+    owned_files = [{"owner": u, "label": l} for u, l in data]
 
     stmt = (
-        select(User.username,File.label)
+        select(User.username, File.label)
         .join(File.user)
         .join(File.file_keys)
         .where(FileKey.user_id.is_(current_user_id))
         .where(File.user_id.is_not(current_user_id))
     )
     data = db_session.execute(stmt).all()
-    received_files = [{'owner': u, 'label': l} for u, l in data]
-    
+    received_files = [{"owner": u, "label": l} for u, l in data]
+
     all_files = owned_files + received_files
 
-    return jsonify(owned_files=owned_files, received_files=received_files, all_files=all_files)
+    return jsonify(
+        owned_files=owned_files, received_files=received_files, all_files=all_files
+    )
+
 
 @app.route("/logout")
 def logout():
@@ -448,4 +468,7 @@ def convert_size(size_bytes):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    if not load_dotenv():
+        print("Error: run setup.py before app.py")
+        exit(1)
+    app.run(host=os.getenv("HOST"), port=int(os.getenv("PORT")), debug=True) # type: ignore

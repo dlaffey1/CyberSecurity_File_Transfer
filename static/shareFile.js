@@ -22,7 +22,7 @@ async function handleSubmit(event) {
         document.getElementById("recipient_username").value;
     const fileLabel = document.getElementById("file_select").value;
 
-    const fileKeyResponse = await fetch(`/getMyFileKey/${fileLabel}`);
+    const fileKeyResponse = await fetch(`${URL_PREFIX}/getMyFileKey/${fileLabel}`);
 
     if (!fileKeyResponse.ok) {
         const error = await fileKeyResponse.json();
@@ -32,13 +32,15 @@ async function handleSubmit(event) {
 
     const fileKeyData = await fileKeyResponse.json();
 
-    const fileKey = await decryptFileKey(B64ToAB(fileKeyData["key"]));
-    const counter = fileKeyData["counter"];
+    const keyPassword = document.getElementById("keyPassword").value;
+    const encryptPrivKey = await getPrivKeyFromDB("encrypt", keyPassword);
+    const fileKey = await decryptFileKey(B64ToAB(fileKeyData["key"]), encryptPrivKey);
+
     const recipientPublicKey = await getPublicKey(recipentUsername, "encrypt");
 
     const encryptedFileKey = await encryptFileKey(fileKey, recipientPublicKey);
 
-    const response = await fetch("/shareFileKey", {
+    const response = await fetch(`${URL_PREFIX}/shareFileKey`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -47,7 +49,6 @@ async function handleSubmit(event) {
             recipient_username: recipentUsername,
             file_label: fileLabel,
             encrypted_key: ABToB64(encryptedFileKey),
-            counter: counter,
         }),
     });
 
