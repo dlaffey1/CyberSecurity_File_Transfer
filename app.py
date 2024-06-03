@@ -6,17 +6,34 @@ from datetime import datetime, timedelta
 from typing import List
 
 from dotenv import load_dotenv
-from flask import (Flask, abort, flash, jsonify, redirect, render_template,
-                   request, session, url_for)
-from sqlalchemy import (DateTime, ForeignKey, Integer, String, Text,
-                        UniqueConstraint, create_engine, func, select)
+from flask import (
+    Flask,
+    abort,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
+from sqlalchemy import (
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    create_engine,
+    func,
+    select,
+)
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import (DeclarativeBase, Mapped, Session, mapped_column,
-                            relationship)
+from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, relationship
 from werkzeug.security import check_password_hash, generate_password_hash
 
 if not load_dotenv():
-    print("No env variables file found, generating secret key automatically...")
+    print("No env variables found, generating env variables automatically...")
     secret_key = secrets.token_hex()
     with open(".env", "w") as env_file:
         env_file.write(f"SECRET_KEY = '{secret_key}'")
