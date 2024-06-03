@@ -183,34 +183,6 @@ async function getPrivKeyFromDB(keyType, password) {
     });
 }
 
-async function passwordToWrappingKey(password, keySalt) {
-    const encoder = new TextEncoder();
-    const passcodeAB = encoder.encode(password);
-
-    // NOTE: Very much not a key, this is just used to generate the key
-    const keyMaterial = await window.crypto.subtle.importKey(
-        "raw",
-        passcodeAB,
-        "PBKDF2",
-        false,
-        ["deriveBits", "deriveKey"]
-    );
-
-    const wrappingKey = await window.crypto.subtle.deriveKey(
-        {
-            name: "PBKDF2",
-            salt: keySalt,
-            iterations: 100_000,
-            hash: "SHA-256",
-        },
-        keyMaterial,
-        { name: "AES-CTR", length: 256 },
-        true,
-        ["wrapKey", "unwrapKey"]
-    );
-    return wrappingKey;
-}
-
 async function wrapPrivateKey(privateKey, password, keySalt, counter) {
     const wrappingKey = await passwordToWrappingKey(password, keySalt);
 
@@ -266,6 +238,34 @@ async function unwrapPrivateKey(
         usages
     );
     return privateKey;
+}
+
+async function passwordToWrappingKey(password, keySalt) {
+    const encoder = new TextEncoder();
+    const passcodeAB = encoder.encode(password);
+
+    // NOTE: Very much not a key, this is just used to generate the key
+    const keyMaterial = await window.crypto.subtle.importKey(
+        "raw",
+        passcodeAB,
+        "PBKDF2",
+        false,
+        ["deriveBits", "deriveKey"]
+    );
+
+    const wrappingKey = await window.crypto.subtle.deriveKey(
+        {
+            name: "PBKDF2",
+            salt: keySalt,
+            iterations: 100_000,
+            hash: "SHA-256",
+        },
+        keyMaterial,
+        { name: "AES-CTR", length: 256 },
+        true,
+        ["wrapKey", "unwrapKey"]
+    );
+    return wrappingKey;
 }
 
 async function fileDataToABs(file) {

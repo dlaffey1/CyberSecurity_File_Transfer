@@ -32,9 +32,10 @@ async function handleSubmit(event) {
 
     const fileKeyData = await fileKeyResponse.json();
 
-    
-    const encryptPrivKey = await getPrivKeyFromDB("encrypt");
+    const keyPassword = document.getElementById("keyPassword").value;
+    const encryptPrivKey = await getPrivKeyFromDB("encrypt", keyPassword);
     const fileKey = await decryptFileKey(B64ToAB(fileKeyData["key"]), encryptPrivKey);
+
     const counter = fileKeyData["counter"];
     const recipientPublicKey = await getPublicKey(recipentUsername, "encrypt");
 
