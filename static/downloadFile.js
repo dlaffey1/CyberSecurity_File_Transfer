@@ -13,16 +13,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     const form = document.getElementById("form");
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
+        const keyPassword = document.getElementById("keyPassword").value;
 
         const fileIndex = fileSelect.value;
-        downloadAndDecryptFile(
+        await downloadAndDecryptFile(
             allFiles[fileIndex].owner,
-            allFiles[fileIndex].label
+            allFiles[fileIndex].label,
+            keyPassword
         );
     });
 });
 
-async function downloadAndDecryptFile(username, fileLabel) {
+async function downloadAndDecryptFile(username, fileLabel, keyPassword) {
     const response = await (
         await fetch(`${URL_PREFIX}/downloadFile/${username}/${fileLabel}`)
     ).json();
@@ -42,7 +44,14 @@ async function downloadAndDecryptFile(username, fileLabel) {
         return;
     }
 
-    const encryptPrivKey= await getPrivKeyFromDB("encrypt");
+    let encryptPrivKey;
+    try {
+        encryptPrivKey = await getPrivKeyFromDB("encrypt", keyPassword);
+    } catch {
+        alert(
+            "Couldn't retrive private key. Please re-enter key wrapping password"
+        );
+    }
 
     const fileKey = await decryptFileKey(encrypedFileKey, encryptPrivKey);
     const file = await decryptFileData(fileKey, fileCounter, encryptedFileData);

@@ -157,23 +157,21 @@ async function getPrivKeyFromDB(keyType, password) {
                             );
 
                         request.onsuccess = (event) => {
-                            console.log(event);
-                            console.log(event.target.result);
                             resolve(event.target.result);
                         };
                     });
                 })
             )
                 .then(([wrappedPrivKey, keySalt, counter]) => {
-                    console.log("Salt");
-                    console.log(keySalt);
                     unwrapPrivateKey(
                         wrappedPrivKey,
                         password,
                         keySalt,
                         counter,
                         keyType
-                    ).then((unwrappedPrivKey) => resolve(unwrappedPrivKey));
+                    )
+                        .then((unwrappedPrivKey) => resolve(unwrappedPrivKey))
+                        .catch((error) => reject(error));
                 })
                 .catch((error) => {
                     reject(error);
@@ -265,49 +263,6 @@ async function unwrapPrivateKey(
         usages
     );
     return privateKey;
-}
-
-async function testPKDecryption() {
-    const keypair = await getPrivKeyFromDB("encrypt");
-    const password = "1234";
-    const keySalt = window.crypto.getRandomValues(new Uint8Array(16));
-    const counter = window.crypto.getRandomValues(new Uint8Array(16));
-
-    const originalPKAB = await window.crypto.subtle.exportKey(
-        "pkcs8",
-        keypair.privateKey
-    );
-    const originalPKB64 = ABToB64(originalPKAB);
-
-    const encryptedPKAB = await wrapPrivateKey(
-        keypair.privateKey,
-        password,
-        keySalt,
-        counter
-    );
-    const encryptedPKB64 = ABToB64(encryptedPKAB);
-
-    const decryptedPK = await unwrapPrivateKey(
-        encryptedPKAB,
-        password,
-        keySalt,
-        counter,
-        "encrypt"
-    );
-    const decryptedPKAB = await window.crypto.subtle.exportKey(
-        "pkcs8",
-        decryptedPK
-    );
-    const decryptedPKB64 = ABToB64(decryptedPKAB);
-
-    console.log("Original Key:");
-    console.log(originalPKB64);
-    console.log("Encrypted Key:");
-    console.log(encryptedPKB64);
-    console.log("Decrypted Key:");
-    console.log(decryptedPKB64);
-    console.log("Matching?");
-    console.log(originalPKB64 === decryptedPKB64);
 }
 
 async function fileDataToABs(file) {
