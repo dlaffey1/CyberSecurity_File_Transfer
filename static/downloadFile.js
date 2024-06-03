@@ -42,9 +42,9 @@ async function downloadAndDecryptFile(username, fileLabel) {
         return;
     }
 
-    const encryptKeyPair = await getKeyPairFromDB("encrypt");
+    const encryptPrivKey= await getPrivKeyFromDB("encrypt");
 
-    const fileKey = await decryptFileKey(encrypedFileKey, encryptKeyPair.privateKey);
+    const fileKey = await decryptFileKey(encrypedFileKey, encryptPrivKey);
     const file = await decryptFileData(fileKey, fileCounter, encryptedFileData);
 
     download(file, file.name);
@@ -61,13 +61,4 @@ function unpackFileData(fileData) {
             type: B64ToAB(fileData.type),
         },
     ];
-}
-
-async function verifyEncryptedFile(encryptedFile, signature, publicKey) {
-    return await window.crypto.subtle.verify(
-        { name: "RSA-PSS", saltLength: 32 },
-        publicKey,
-        signature,
-        encryptedFile
-    );
 }

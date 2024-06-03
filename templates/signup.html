@@ -2,7 +2,7 @@
 
 {% extends "layout.html" %}
 {% block body %}
-  <form action="{{ url_for("signup") }}" method="post" class="flex-col">
+  <form action="{{ url_for("signup") }}" method="post" class="flex-col" id="form">
     <h1>Sign Up</h1>
  
     <label for="username">Username:</label>
@@ -67,9 +67,13 @@
     </div>
 
     <button type="button" onclick="generateKeypairs()">Generate Keypairs</button>
-    <em>Only your public keys will be submitted to the server
+    <em>Public keys will be submitted to the server
       <br>
-    Both key pairs will be stored locally</em>
+    Privates key will be stored locally</em>
+    <label for="keyPassword">Key Wrapping Password:</label>
+    <input type="password" id="keyPassword" required />
+      <em>You will need to enter this every time you wish to upload, download or share a file</em>
+
     <input type="submit" value="Sign Up" id="submit" />
     <p>
       Already have an account? <a href="{{ url_for("login") }}">Login here</a>

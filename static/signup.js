@@ -18,11 +18,13 @@ document.addEventListener("DOMContentLoaded", function () {
             type === "password" ? "Show Password" : "Hide Password";
     });
 
-    const submitBtn = document.getElementById("submit");
+    const form = document.getElementById("form");
 
-    submitBtn.addEventListener("click", async () => {
+    form.addEventListener("submit", async () => {
         const username = document.getElementById("username").value;
-        savePrivKeysToDB(encryptKeyPair.privateKey, sigKeyPair.privateKey, username);
+        const keyPassword = document.getElementById("keyPassword").value;
+        console.log("Key password",keyPassword);
+        savePrivKeysToDB(encryptKeyPair.privateKey, sigKeyPair.privateKey, username, keyPassword);
     });
 });
 
