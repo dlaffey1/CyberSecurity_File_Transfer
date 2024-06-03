@@ -1,8 +1,14 @@
 <script src="{{url_for('static', filename='signup.js')}}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://unpkg.com/@otplib/preset-browser@^12.0.0/buffer.js"></script>
+<script src="https://unpkg.com/@otplib/preset-browser@^12.0.0/index.js"></script>
 
 {% extends "layout.html" %}
 {% block body %}
-  <form action="{{ url_for("signup") }}" method="post" class="flex-col" id="form">
+  <form action="{{ url_for("signup") }}"
+        method="post"
+        class="flex-col"
+        id="form">
     <h1>Sign Up</h1>
  
     <label for="username">Username:</label>
@@ -72,7 +78,15 @@
     Privates key will be stored locally</em>
     <label for="keyPassword">Key Wrapping Password:</label>
     <input type="password" id="keyPassword" required />
-      <em>You will need to enter this every time you wish to upload, download or share a file</em>
+    <em>You will need to enter this every time you wish to upload, download or share a file</em>
+
+    <button type="button" id="qrButton">Generate QR code</button>
+
+    <div id="qrcode"></div>
+    <input type="hidden" id="otpSecret" name="otp_secret" />
+
+    <label for="otp">OTP</label>
+    <input type="input" id="otp" name="otp" required />
 
     <input type="submit" value="Sign Up" id="submit" />
     <p>
