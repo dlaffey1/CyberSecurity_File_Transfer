@@ -32,20 +32,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, relationship
 from werkzeug.security import check_password_hash, generate_password_hash
 
-if not load_dotenv():
-    print("No env variables found, generating env variables automatically...")
-    secret_key = secrets.token_hex()
-    with open(".env", "w") as env_file:
-        env_file.writelines(
-            [
-                f"SECRET_KEY = '{secret_key}'\n",
-                "HOST = '127.0.0.1'\n",
-                "PORT = '5000'\n",
-                "URL_PREFIX = ''\n",
-            ]
-        )
-    print(".env generated")
-
 UPLOAD_FOLDER = "instance/uploaded_files"
 MAX_FILE_SIZE_IN_GB = 10
 DATABASE_URI = "sqlite:///instance/db.sqlite3"
@@ -483,4 +469,7 @@ def convert_size(size_bytes):
 
 
 if __name__ == "__main__":
-    app.run(host=os.getenv("HOST"), port=int(os.getenv("PORT")), debug=True)  # type: ignore
+    if not load_dotenv():
+        print("Error: run setup.py before app.py")
+        exit(1)
+    app.run(host=os.getenv("HOST"), port=int(os.getenv("PORT")), debug=True) # type: ignore
