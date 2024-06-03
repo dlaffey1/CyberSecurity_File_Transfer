@@ -1,6 +1,7 @@
 import secrets
 import os
 import sys
+import shutil
 
 serverEnv = len(sys.argv) > 1 and sys.argv[1] == "server"
 
@@ -13,8 +14,9 @@ else:
     port = 5000
     url_prefix = ""
     
-if not os.path.isdir("instance"):
-    os.mkdir("instance")
+if os.path.exists("instance"):
+    shutil.rmtree("instance")
+os.mkdir("instance")
 
 secret_key = secrets.token_hex()
 with open(".env", "w") as env_file:
