@@ -51,6 +51,7 @@ async function downloadAndDecryptFile(username, fileLabel, keyPassword) {
         alert(
             "Couldn't retrive private key. Please re-enter key wrapping password"
         );
+        return;
     }
 
     const fileKey = await decryptFileKey(encrypedFileKey, encryptPrivKey);
