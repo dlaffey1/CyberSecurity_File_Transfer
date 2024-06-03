@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 async function downloadAndDecryptFile(username, fileLabel) {
     const response = await (
-        await fetch(`/downloadFile/${username}/${fileLabel}`)
+        await fetch(`${URL_PREFIX}/downloadFile/${username}/${fileLabel}`)
     ).json();
     const [encrypedFileKey, fileCounter, fileSig, encryptedFileData] =
         unpackFileData(response);

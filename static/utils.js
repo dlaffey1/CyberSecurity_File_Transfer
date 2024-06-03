@@ -198,19 +198,19 @@ async function decryptFileKey(encryptedFileKey) {
 }
 
 async function getCurrentUsername() {
-    const response = await fetch("/currentUser");
+    const response = await fetch(`${URL_PREFIX}/currentUser`);
     const obj = await response.json();
     return obj.username;
 }
 
 async function getFileLists() {
-    const file_lists = await fetch("/files");
+    const file_lists = await fetch(`${URL_PREFIX}/files`);
     return await file_lists.json();
 }
 
 async function getPublicKey(username, keyType) {
     const publicKeyResponse = await (
-        await fetch(`/getPublicKey/${keyType}/${username}`)
+        await fetch(`${URL_PREFIX}/getPublicKey/${keyType}/${username}`)
     ).json();
     const publicKeyB64 = publicKeyResponse["key"];
 

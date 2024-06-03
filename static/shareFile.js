@@ -22,7 +22,7 @@ async function handleSubmit(event) {
         document.getElementById("recipient_username").value;
     const fileLabel = document.getElementById("file_select").value;
 
-    const fileKeyResponse = await fetch(`/getMyFileKey/${fileLabel}`);
+    const fileKeyResponse = await fetch(`${URL_PREFIX}/getMyFileKey/${fileLabel}`);
 
     if (!fileKeyResponse.ok) {
         const error = await fileKeyResponse.json();
@@ -38,7 +38,7 @@ async function handleSubmit(event) {
 
     const encryptedFileKey = await encryptFileKey(fileKey, recipientPublicKey);
 
-    const response = await fetch("/shareFileKey", {
+    const response = await fetch(`${URL_PREFIX}/shareFileKey`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",

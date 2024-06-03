@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const encryptKeyPair = await getKeyPairFromDB("encrypt");
         const encryptedFileKey = await encryptFileKey(fileKey, encryptKeyPair.publicKey);
 
-        const response = await fetch("/uploadFile", {
+        const response = await fetch(`${URL_PREFIX}/uploadFile`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
