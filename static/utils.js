@@ -129,6 +129,9 @@ async function savePrivKeysToDB(
 
 async function getPrivKeyFromDB(keyType, password) {
     const currentUser = await getCurrentUsername();
+    if (currentUser === null) {
+        throw new Error("Can't open db with null username")
+    }
 
     return new Promise((resolve, reject) => {
         const dbName = "harambe|" + currentUser;
