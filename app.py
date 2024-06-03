@@ -78,6 +78,7 @@ class File(Base):
     name: Mapped[str] = mapped_column(Text, nullable=False)
     type: Mapped[str] = mapped_column(Text, nullable=False)
     sig: Mapped[str] = mapped_column(Text, nullable=False)
+    counter: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     user: Mapped["User"] = relationship(back_populates="files")
@@ -100,7 +101,6 @@ class FileKey(Base):
         Integer, ForeignKey("users.id"), nullable=False
     )
     key: Mapped[str] = mapped_column(Text, nullable=False)
-    counter: Mapped[str] = mapped_column(Text, nullable=False)
 
     file: Mapped["File"] = relationship(back_populates="file_keys")
     user: Mapped["User"] = relationship(back_populates="file_keys")
@@ -206,13 +206,13 @@ def upload_file():
 
         try:
             file_key = data["file_key"]
-            file_counter = data["file_counter"]
 
             file_label = data["file_label"]
             file_name = data["file_name"]
             file_type = data["file_type"]
             file_size = data["file_size"]
             file_sig = data["file_sig"]
+            file_counter = data["file_counter"]
             file_content = base64.b64decode(data["file"])
         except KeyError as e:
             abort(400, description=f"Missing item from payload: {e}")
@@ -234,6 +234,7 @@ def upload_file():
                 name=file_name,
                 type=file_type,
                 sig=file_sig,
+                counter=file_counter,
             )
 
             db_session.add(file)
@@ -250,7 +251,6 @@ def upload_file():
                 file_id=file.id,
                 user_id=session["user_id"],
                 key=file_key,
-                counter=file_counter,
             )
 
             db_session.add(new_file_key)
@@ -310,8 +310,8 @@ def download_file_by_username_and_label(username, file_label):
         name=file.name,
         type=file.type,
         sig=file.sig,
+        counter=file.counter,
         key=file_key.key,
-        counter=file_key.counter,
     )
 
 
@@ -333,7 +333,6 @@ def share_file_key():
         username = data["recipient_username"]
         label = data["file_label"]
         key = data["encrypted_key"]
-        counter = data["counter"]
     except KeyError as e:
         return jsonify(msg=f"Missing item from payload: {e}"), 400
 
@@ -356,7 +355,7 @@ def share_file_key():
         flash(f"Something went wrong when retrieving the file '{label}'")
         abort(400, f"No file with label '{label}'")
 
-    file_key = FileKey(file_id=file_id, user_id=user_id, key=key, counter=counter)
+    file_key = FileKey(file_id=file_id, user_id=user_id, key=key)
 
     try:
         db_session.add(file_key)
@@ -380,7 +379,7 @@ def get_file_key(file_label):
         return jsonify(msg="User not logged in"), 400
 
     stmt = (
-        select(FileKey.key, FileKey.counter)
+        select(FileKey.key, File.counter)
         .join(FileKey.file)
         .where(FileKey.user_id.is_(session["user_id"]))
         .where(File.label.is_(file_label))

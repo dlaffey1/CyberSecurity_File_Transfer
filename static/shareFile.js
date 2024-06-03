@@ -36,7 +36,6 @@ async function handleSubmit(event) {
     const encryptPrivKey = await getPrivKeyFromDB("encrypt", keyPassword);
     const fileKey = await decryptFileKey(B64ToAB(fileKeyData["key"]), encryptPrivKey);
 
-    const counter = fileKeyData["counter"];
     const recipientPublicKey = await getPublicKey(recipentUsername, "encrypt");
 
     const encryptedFileKey = await encryptFileKey(fileKey, recipientPublicKey);
@@ -50,7 +49,6 @@ async function handleSubmit(event) {
             recipient_username: recipentUsername,
             file_label: fileLabel,
             encrypted_key: ABToB64(encryptedFileKey),
-            counter: counter,
         }),
     });
 

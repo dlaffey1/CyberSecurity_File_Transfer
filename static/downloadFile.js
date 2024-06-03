@@ -29,7 +29,7 @@ async function downloadAndDecryptFile(username, fileLabel, keyPassword) {
         await fetch(`${URL_PREFIX}/downloadFile/${username}/${fileLabel}`)
     ).json();
     const [encrypedFileKey, fileCounter, fileSig, encryptedFileData] =
-        unpackFileData(response);
+        unpackFileInfoFromResponse(response);
 
     const publicKey = await getPublicKey(username, "sig");
 
@@ -60,15 +60,15 @@ async function downloadAndDecryptFile(username, fileLabel, keyPassword) {
     download(file, file.name);
 }
 
-function unpackFileData(fileData) {
+function unpackFileInfoFromResponse(response) {
     return [
-        B64ToAB(fileData.key),
-        B64ToAB(fileData.counter),
-        B64ToAB(fileData.sig),
+        B64ToAB(response.key),
+        B64ToAB(response.counter),
+        B64ToAB(response.sig),
         {
-            file: B64ToAB(fileData.file),
-            name: B64ToAB(fileData.name),
-            type: B64ToAB(fileData.type),
+            file: B64ToAB(response.file),
+            name: B64ToAB(response.name),
+            type: B64ToAB(response.type),
         },
     ];
 }
