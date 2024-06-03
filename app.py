@@ -17,6 +17,7 @@ from flask import (
     session,
     url_for as original_url_for,
 )
+import pyotp
 from sqlalchemy import (
     DateTime,
     ForeignKey,
@@ -56,6 +57,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     h_pwd: Mapped[str] = mapped_column(String(162), nullable=False)
+    otp_secret: Mapped[str] = mapped_column(String(16), nullable=False)
     pub_sig_key: Mapped[str] = mapped_column(String(736), nullable=False)
     pub_encrypt_key: Mapped[str] = mapped_column(String(736), nullable=False)
 
@@ -148,14 +150,25 @@ def signup():
     if request.method == "POST":
         username = request.form["username"]
         pwd = request.form["password"]
+        
+        otp_secret = request.form["otp_secret"]
+        otp = request.form["otp"]
+        
+        totp = pyotp.TOTP(otp_secret)
+        if totp.now() != otp:
+            flash("OTP entered was incorrect. Try again")
+            return redirect(url_for("signup"))
+        
         pub_sig_key = request.form["pub_sig_key"]
         pub_encrypt_key = request.form["pub_encrypt_key"]
 
         h_pwd = generate_password_hash(password=pwd)
+        
         try:
             new_user = User(
                 username=username,
                 h_pwd=h_pwd,
+                otp_secret=otp_secret,
                 pub_sig_key=pub_sig_key,
                 pub_encrypt_key=pub_encrypt_key,
             )
@@ -177,6 +190,7 @@ def login():
     if request.method == "POST":
         username = request.form["username"]
         pwd = request.form["password"]
+        otp = request.form["otp"]
 
         stmt = select(User).where(User.username.is_(username))
         user = db_session.scalar(stmt)
@@ -184,8 +198,10 @@ def login():
         if user is None:
             flash("Invalid credentials. Try again")
             return redirect(url_for("login"))
+        
+        totp = pyotp.TOTP(user.otp_secret)
 
-        if check_password_hash(user.h_pwd, pwd):
+        if check_password_hash(user.h_pwd, pwd) and totp.now() == otp:
             session["user_id"] = user.id
             session["username"] = user.username
             return redirect(url_for("index"))

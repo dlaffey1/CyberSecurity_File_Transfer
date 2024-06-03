@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const passwordInput = document.getElementById("password");
     const togglePasswordBtn = document.getElementById("togglePassword");
 
-    togglePasswordBtn.addEventListener("click", function () {
+    togglePasswordBtn.addEventListener("click", () => {
         const type =
             passwordInput.getAttribute("type") === "password"
                 ? "text"
@@ -18,13 +18,33 @@ document.addEventListener("DOMContentLoaded", function () {
             type === "password" ? "Show Password" : "Hide Password";
     });
 
+    const qrButton = document.getElementById("qrButton");
+
+    qrButton.addEventListener("click", () => {
+        const otpSecret = otplib.authenticator.generateSecret();
+        const username = document.getElementById("username").value;
+
+        const otpSecretInput = document.getElementById("otpSecret");
+        otpSecretInput.value = otpSecret;
+
+        const otpauthURL = generateOTPAuthURL("Harambe", username, otpSecret);
+
+        console.log(otpauthURL);
+        renderQRCode(otpauthURL);
+    });
+
     const form = document.getElementById("form");
 
     form.addEventListener("submit", async () => {
         const username = document.getElementById("username").value;
         const keyPassword = document.getElementById("keyPassword").value;
-        console.log("Key password",keyPassword);
-        savePrivKeysToDB(encryptKeyPair.privateKey, sigKeyPair.privateKey, username, keyPassword);
+        console.log("Key password", keyPassword);
+        savePrivKeysToDB(
+            encryptKeyPair.privateKey,
+            sigKeyPair.privateKey,
+            username,
+            keyPassword
+        );
     });
 });
 
@@ -158,4 +178,14 @@ async function generateKeypairs(username) {
     document.getElementById("priv-encrypt-key").textContent = encryptPrivKeyB64;
 
     revealCopyButtons();
+}
+
+function renderQRCode(url) {
+    const qrCodeContainer = document.getElementById("qrcode");
+    qrCodeContainer.innerHTML = "";
+    new QRCode("qrcode", url);
+}
+
+function generateOTPAuthURL(appName, username, secret) {
+    return `otpauth://totp/${appName}:${username}?secret=${secret}`;
 }
