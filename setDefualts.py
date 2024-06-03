@@ -29,5 +29,6 @@ with open(".env", "w") as env_file:
         ]
     )
     
-msg = f"{"Server Environment" if serverEnv else "Development Environment"} defaults instantiated"
+environment_name = "Server Environment" if serverEnv else "Development Environment"
+msg = f"{environment_name} defaults instantiated"
 print(msg)

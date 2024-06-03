@@ -5,3 +5,4 @@
 .djlintrc
 uploaded_files/
 static/constants.js
+venv*
