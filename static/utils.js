@@ -180,12 +180,10 @@ async function encryptFileKey(fileKey, publicKey) {
     );
 }
 
-async function decryptFileKey(encryptedFileKey) {
-    const encryptKeyPair = await getKeyPairFromDB("encrypt");
-
+async function decryptFileKey(encryptedFileKey, privateKey) {
     const fileKeyAB = await window.crypto.subtle.decrypt(
         { name: "RSA-OAEP" },
-        encryptKeyPair.privateKey,
+        privateKey,
         encryptedFileKey
     );
     return await window.crypto.subtle.importKey(

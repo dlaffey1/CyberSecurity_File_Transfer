@@ -42,7 +42,9 @@ async function downloadAndDecryptFile(username, fileLabel) {
         return;
     }
 
-    const fileKey = await decryptFileKey(encrypedFileKey);
+    const encryptKeyPair = await getKeyPairFromDB("encrypt");
+
+    const fileKey = await decryptFileKey(encrypedFileKey, encryptKeyPair.privateKey);
     const file = await decryptFileData(fileKey, fileCounter, encryptedFileData);
 
     download(file, file.name);
