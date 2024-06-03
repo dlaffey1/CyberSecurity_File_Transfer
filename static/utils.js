@@ -74,6 +74,44 @@ async function keyPairFromB64(publicKeyB64, privateKeyB64, keyType) {
     };
 }
 
+async function saveKeyPairsToDB(
+    encryptKeyPair,
+    sigKeyPair,
+    username,
+    passcode
+) {
+    const [encryptPubKeyB64, encryptPrivKeyB64] = await keyPairToB64(
+        encryptKeyPair
+    );
+    const [sigPubKeyB64, sigPrivKeyB64] = await keyPairToB64(sigKeyPair);
+
+    const db_name = "harambe|" + username;
+    const idb = window.indexedDB.open(db_name);
+
+    idb.onerror = (event) => {
+        console.log("Couldn't open IndexedDB");
+    };
+
+    idb.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        db.createObjectStore("encrypt");
+        db.createObjectStore("sig");
+    };
+
+    idb.onsuccess = (event) => {
+        const db = event.target.result;
+        const transaction = db.transaction(["encrypt", "sig"], "readwrite");
+        const encryptKeyPair = transaction.objectStore("encrypt");
+        const sigKeyPair = transaction.objectStore("sig");
+
+        encryptKeyPair.put(encryptPubKeyB64, "public");
+        encryptKeyPair.put(encryptPrivKeyB64, "private");
+
+        sigKeyPair.put(sigPubKeyB64, "public");
+        sigKeyPair.put(sigPrivKeyB64, "private");
+    };
+}
+
 async function getKeyPairFromDB(keyType) {
     const currentUser = await getCurrentUsername();
 
@@ -106,6 +144,120 @@ async function getKeyPairFromDB(keyType) {
         };
     });
 }
+
+async function passwordToWrappingKey(password, keySalt) {
+    const encoder = new TextEncoder();
+    const passcodeAB = encoder.encode(password);
+
+    // NOTE: Very much not a key, this is just used to generate the key
+    const keyMaterial = await window.crypto.subtle.importKey(
+        "raw",
+        passcodeAB,
+        "PBKDF2",
+        false,
+        ["deriveBits", "deriveKey"]
+    );
+
+    const wrappingKey = await window.crypto.subtle.deriveKey(
+        {
+            name: "PBKDF2",
+            salt: keySalt,
+            iterations: 100_000,
+            hash: "SHA-256",
+        },
+        keyMaterial,
+        { name: "AES-CTR", length: 256 },
+        true,
+        ["wrapKey", "unwrapKey"]
+    );
+    return wrappingKey;
+}
+
+async function encryptPrivateKey(privateKey, password, keySalt, counter) {
+    const wrappingKey = await passwordToWrappingKey(password, keySalt);
+
+    const encryptedPrivateKey = await window.crypto.subtle.wrapKey(
+        "pkcs8",
+        privateKey,
+        wrappingKey,
+        {
+            name: "AES-CTR",
+            counter: counter,
+            length: 64,
+        }
+    );
+    return encryptedPrivateKey;
+}
+
+async function decryptPrivateKey(
+    encryptedPrivateKey,
+    password,
+    keySalt,
+    counter,
+    keyType
+) {
+    let usage, algorithm;
+
+    switch (keyType) {
+        case "sig":
+            usage = ["sign"];
+            algorithm = "RSA-PSS";
+            break;
+
+        case "encrypt":
+            usage = ["decrypt"];
+            algorithm = "RSA-OAEP";
+            break;
+    }
+
+    const wrappingKey = await passwordToWrappingKey(password, keySalt);
+
+    const privateKey = await window.crypto.subtle.unwrapKey(
+        "pkcs8",
+        encryptedPrivateKey,
+        wrappingKey,
+        {
+            name: "AES-CTR",
+            counter: counter,
+            length: 64,
+        },
+        {
+            name: algorithm,
+            hash: "SHA-256",
+        },
+        true,
+        usage
+    );
+    return privateKey;
+}
+
+async function testPKEncryption() {
+    const keypair = await getKeyPairFromDB("encrypt");
+    const password = "1234";
+    const keySalt = window.crypto.getRandomValues(new Uint8Array(16));
+    const counter = window.crypto.getRandomValues(new Uint8Array(16));
+
+    const originalPKAB = await window.crypto.subtle.exportKey("pkcs8", keypair.privateKey);
+    const originalPKB64 = ABToB64(originalPKAB);
+
+    const encryptedPKAB = await encryptPrivateKey(keypair.privateKey, password, keySalt, counter);
+    const encryptedPKB64 = ABToB64(encryptedPKAB);
+
+    const decryptedPK = await decryptPrivateKey(encryptedPKAB, password, keySalt, counter, "encrypt");
+    const decryptedPKAB = await window.crypto.subtle.exportKey("pkcs8", decryptedPK);
+    const decryptedPKB64 = ABToB64(decryptedPKAB);
+
+    console.log("Original Key:");
+    console.log(originalPKB64);
+    console.log("Encrypted Key:");
+    console.log(encryptedPKB64);
+    console.log("Decrypted Key:");
+    console.log(decryptedPKB64);
+    console.log("Matching?");
+    console.log(originalPKB64 === decryptedPKB64);
+}
+
+testPKEncryption();
 
 async function fileDataToABs(file) {
     const fileArray = await file.arrayBuffer();
