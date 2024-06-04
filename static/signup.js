@@ -74,7 +74,9 @@ function addPasswordRequirements() {
         const { valid, requirements } = checkPasswordRequirements(password);
 
         if (!valid) {
-            submitBtn.setAttribute('disabled', true);
+            submitBtn.setAttribute('disabled', "");
+        } else {
+            submitBtn.removeAttribute('disabled');
         }
 
         requirements.forEach((req) => {
