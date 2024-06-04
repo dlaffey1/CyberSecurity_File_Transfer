@@ -62,7 +62,7 @@ async function downloadAndDecryptFile(username, fileLabel, keyPassword) {
         encryptPrivKey = await getPrivKeyFromDB('encrypt', keyPassword);
     } catch {
         alert(
-            "Couldn't retrive private key. Please re-enter key wrapping password",
+            "Couldn't retrive private key. Please re-enter key password",
         );
         return;
     }
