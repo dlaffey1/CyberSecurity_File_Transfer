@@ -8,14 +8,14 @@
 ~~~
 pip install -r requirements.txt
 python setDefaults.py
-python main.py
+python app.py
 ~~~
 
 #### To run the project hosted on the glynny:
 ~~~
 pip install -r requirements.txt
 python setDefaults.py server
-python main.py
+python app.py
 ~~~
 
 
