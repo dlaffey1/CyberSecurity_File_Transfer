@@ -1,54 +1,72 @@
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const fileLists = await getFileLists();
-    const fileSelect = document.getElementById("file_select");
+    const fileSelect = document.getElementById('file_select');
     const owned_files = fileLists.owned_files;
 
     for (let i = 0; i < owned_files.length; i++) {
-        const option = document.createElement("option");
+        const option = document.createElement('option');
         option.value = owned_files[i].label;
         option.textContent = owned_files[i].label;
         fileSelect.appendChild(option);
     }
 
-    const form = document.getElementById("form");
-    form.addEventListener("submit", handleSubmit);
+    const form = document.getElementById('form');
+    form.addEventListener('submit', handleSubmit);
 });
 
 async function handleSubmit(event) {
     event.preventDefault();
-    const form = document.getElementById("form");
+    document.getElementById('submit').setAttribute('disabled', '');
 
-    const recipentUsername =
-        document.getElementById("recipient_username").value;
-    const fileLabel = document.getElementById("file_select").value;
+    try {
+        const recipentUsername =
+            document.getElementById('recipient_username').value;
+        const fileLabel = document.getElementById('file_select').value;
 
-    const fileKeyResponse = await fetch(`${URL_PREFIX}/getMyFileKey/${fileLabel}`);
+        const keyPassword = document.getElementById('keyPassword').value;
+        const myEncryptedFileKey = await getEncryptedFileKey(fileLabel);
+        const encryptPrivKey = await getPrivKeyFromDB('encrypt', keyPassword);
 
-    if (!fileKeyResponse.ok) {
-        const error = await fileKeyResponse.json();
-        alert(`Something went wrong ${error.msg}`);
-        return;
+        const fileKey = await decryptFileKey(
+            myEncryptedFileKey,
+            encryptPrivKey,
+        );
+        const recipientPublicKey = await getPublicKey(
+            recipentUsername,
+            'encrypt',
+        );
+
+        await encryptAndUploadFileKey(
+            fileKey,
+            fileLabel,
+            recipentUsername,
+            recipientPublicKey,
+        );
+    } finally {
+        document.getElementById('submit').removeAttribute('disabled');
     }
+}
 
-    const fileKeyData = await fileKeyResponse.json();
-
-    const keyPassword = document.getElementById("keyPassword").value;
-    const encryptPrivKey = await getPrivKeyFromDB("encrypt", keyPassword);
-    const fileKey = await decryptFileKey(B64ToAB(fileKeyData["key"]), encryptPrivKey);
-
-    const recipientPublicKey = await getPublicKey(recipentUsername, "encrypt");
-
-    const encryptedFileKey = await encryptFileKey(fileKey, recipientPublicKey);
+async function encryptAndUploadFileKey(
+    fileKey,
+    fileLabel,
+    recipentUsername,
+    recipientPublicKey,
+) {
+    const recipientEncryptedFileKey = await encryptFileKey(
+        fileKey,
+        recipientPublicKey,
+    );
 
     const response = await fetch(`${URL_PREFIX}/shareFileKey`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
         },
         body: JSON.stringify({
             recipient_username: recipentUsername,
             file_label: fileLabel,
-            encrypted_key: ABToB64(encryptedFileKey),
+            encrypted_key: ABToB64(recipientEncryptedFileKey),
         }),
     });
 
@@ -60,4 +78,20 @@ async function handleSubmit(event) {
         console.log(response);
         alert(`Error: ${errorData.description}`);
     }
+}
+
+async function getEncryptedFileKey(fileLabel) {
+    const fileKeyResponse = await fetch(
+        `${URL_PREFIX}/getMyFileKey/${fileLabel}`,
+    );
+
+    if (!fileKeyResponse.ok) {
+        const error = await fileKeyResponse.json();
+        alert(`Something went wrong ${error.msg}`);
+        throw new Error('Failed to retrieve file key from server');
+    }
+
+    const fileKeyData = await fileKeyResponse.json();
+
+    return B64ToAB(fileKeyData['key']);
 }

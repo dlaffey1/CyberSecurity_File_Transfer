@@ -1,26 +1,32 @@
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const fileLists = await getFileLists();
-    const fileSelect = document.getElementById("file_select");
+    const fileSelect = document.getElementById('file_select');
     const allFiles = fileLists.all_files;
 
     for (let i = 0; i < allFiles.length; i++) {
-        const option = document.createElement("option");
+        const option = document.createElement('option');
         option.value = i;
         option.textContent = `${allFiles[i].label} - ${allFiles[i].owner}`;
         fileSelect.appendChild(option);
     }
 
-    const form = document.getElementById("form");
-    form.addEventListener("submit", async (event) => {
+    const form = document.getElementById('form');
+    form.addEventListener('submit', async (event) => {
         event.preventDefault();
-        const keyPassword = document.getElementById("keyPassword").value;
+        document.getElementById('submit').setAttribute('disabled', '');
 
-        const fileIndex = fileSelect.value;
-        await downloadAndDecryptFile(
-            allFiles[fileIndex].owner,
-            allFiles[fileIndex].label,
-            keyPassword
-        );
+        try {
+            const keyPassword = document.getElementById('keyPassword').value;
+
+            const fileIndex = fileSelect.value;
+            await downloadAndDecryptFile(
+                allFiles[fileIndex].owner,
+                allFiles[fileIndex].label,
+                keyPassword,
+            );
+        } finally {
+            document.getElementById('submit').removeAttribute('disabled');
+        }
     });
 });
 
@@ -31,25 +37,25 @@ async function downloadAndDecryptFile(username, fileLabel, keyPassword) {
     const [encrypedFileKey, fileCounter, fileSig, encryptedFileData] =
         unpackFileInfoFromResponse(response);
 
-    const publicKey = await getPublicKey(username, "sig");
+    const publicKey = await getPublicKey(username, 'sig');
 
     const signatureIsValid = await verifyEncryptedFile(
         encryptedFileData.file,
         fileSig,
-        publicKey
+        publicKey,
     );
 
     if (!signatureIsValid) {
-        alert("Error: File corruption. File signature is not valid");
+        alert('Error: File corruption. File signature is not valid');
         return;
     }
 
     let encryptPrivKey;
     try {
-        encryptPrivKey = await getPrivKeyFromDB("encrypt", keyPassword);
+        encryptPrivKey = await getPrivKeyFromDB('encrypt', keyPassword);
     } catch {
         alert(
-            "Couldn't retrive private key. Please re-enter key wrapping password"
+            "Couldn't retrive private key. Please re-enter key wrapping password",
         );
         return;
     }
