@@ -16,19 +16,26 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 async function handleSubmit(event) {
     event.preventDefault();
-    const form = document.getElementById("form");
-
+    document.getElementById("submit").setAttribute("disabled","");
+    
+    try {
     const recipentUsername =
         document.getElementById("recipient_username").value;
     const fileLabel = document.getElementById("file_select").value;
 
-    const myEncryptedFileKey = getEncryptedFileKey(fileLabel);
-
     const keyPassword = document.getElementById("keyPassword").value;
+    const myEncryptedFileKey = await getEncryptedFileKey(fileLabel);
     const encryptPrivKey = await getPrivKeyFromDB("encrypt", keyPassword);
-    const fileKey = await decryptFileKey(myEncryptedFileKey, encryptPrivKey);
 
+    const fileKey = await decryptFileKey(myEncryptedFileKey, encryptPrivKey);
     const recipientPublicKey = await getPublicKey(recipentUsername, "encrypt");
+
+    await encryptAndUploadFileKey(fileKey, recipientPublicKey);} finally {
+        document.getElementById("submit").removeAttribute("disabled");
+    }
+}
+
+async function encryptAndUploadFileKey(fileKey, recipientPublicKey) {
     const recipientEncryptedFileKey = await encryptFileKey(fileKey, recipientPublicKey);
 
     const response = await fetch(`${URL_PREFIX}/shareFileKey`, {
@@ -51,6 +58,7 @@ async function handleSubmit(event) {
         console.log(response);
         alert(`Error: ${errorData.description}`);
     }
+
 }
 
 async function getEncryptedFileKey(fileLabel) {
