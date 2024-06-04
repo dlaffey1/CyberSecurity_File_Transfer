@@ -1,36 +1,19 @@
 import base64
 import math
 import os
-import secrets
 from datetime import datetime, timedelta
 from typing import List
 
-from dotenv import load_dotenv
-from flask import (
-    Flask,
-    abort,
-    flash,
-    jsonify,
-    redirect,
-    render_template,
-    request,
-    session,
-    url_for as original_url_for,
-)
 import pyotp
-from sqlalchemy import (
-    DateTime,
-    ForeignKey,
-    Integer,
-    String,
-    Text,
-    UniqueConstraint,
-    create_engine,
-    func,
-    select,
-)
+from dotenv import load_dotenv
+from flask import (Flask, abort, flash, jsonify, redirect, render_template,
+                   request, session)
+from flask import url_for as original_url_for
+from sqlalchemy import (DateTime, ForeignKey, Integer, String, Text,
+                        UniqueConstraint, create_engine, func, select)
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, relationship
+from sqlalchemy.orm import (DeclarativeBase, Mapped, Session, mapped_column,
+                            relationship)
 from werkzeug.security import check_password_hash, generate_password_hash
 
 UPLOAD_FOLDER = "instance/uploaded_files"
@@ -41,10 +24,6 @@ app = Flask(__name__)
 app.permanent_session_lifetime = timedelta(hours=1)
 app.secret_key = os.getenv("SECRET_KEY")
 app.config["URL_PREFIX"] = os.getenv("URL_PREFIX")
-
-with open("./static/constants.js", "w") as file:
-    url_prefix = os.getenv("URL_PREFIX")
-    file.write(f"const URL_PREFIX = '{url_prefix}'")
 
 
 class Base(DeclarativeBase):
@@ -150,20 +129,20 @@ def signup():
     if request.method == "POST":
         username = request.form["username"]
         pwd = request.form["password"]
-        
+
         otp_secret = request.form["otp_secret"]
         otp = request.form["otp"]
-        
+
         totp = pyotp.TOTP(otp_secret)
         if totp.now() != otp:
             flash("OTP entered was incorrect. Try again")
             return redirect(url_for("signup"))
-        
+
         pub_sig_key = request.form["pub_sig_key"]
         pub_encrypt_key = request.form["pub_encrypt_key"]
 
         h_pwd = generate_password_hash(password=pwd)
-        
+
         try:
             new_user = User(
                 username=username,
@@ -198,7 +177,7 @@ def login():
         if user is None:
             flash("Invalid credentials. Try again")
             return redirect(url_for("login"))
-        
+
         totp = pyotp.TOTP(user.otp_secret)
 
         if check_password_hash(user.h_pwd, pwd) and totp.now() == otp:
@@ -487,4 +466,4 @@ if __name__ == "__main__":
     if not load_dotenv():
         print("Error: run setup.py before app.py")
         exit(1)
-    app.run(host=os.getenv("HOST"), port=int(os.getenv("PORT")), debug=True) # type: ignore
+    app.run(host=os.getenv("HOST"), port=int(os.getenv("PORT")), debug=True)  # type: ignore

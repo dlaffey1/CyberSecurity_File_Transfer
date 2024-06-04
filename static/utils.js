@@ -1,5 +1,5 @@
 function ABToB64(arrayBuffer) {
-    let fullString = "";
+    let fullString = '';
     const bytes = new Uint8Array(arrayBuffer);
     const chunkSize = 8192; // Process data in chunks to avoid stack overflow
     for (let i = 0; i < bytes.length; i += chunkSize) {
@@ -21,13 +21,13 @@ function B64ToAB(stringInB64) {
 
 async function keyPairToB64(keyPair) {
     const keyPubExp = await window.crypto.subtle.exportKey(
-        "spki",
-        keyPair.publicKey
+        'spki',
+        keyPair.publicKey,
     );
 
     const keyPrivExp = await window.crypto.subtle.exportKey(
-        "pkcs8",
-        keyPair.privateKey
+        'pkcs8',
+        keyPair.privateKey,
     );
 
     return [ABToB64(keyPubExp), ABToB64(keyPrivExp)];
@@ -36,36 +36,36 @@ async function keyPairFromB64(publicKeyB64, privateKeyB64, keyType) {
     let usages, algorithm;
 
     switch (keyType) {
-        case "sig":
-            usages = { publicKey: ["verify"], privateKey: ["sign"] };
-            algorithm = "RSA-PSS";
+        case 'sig':
+            usages = { publicKey: ['verify'], privateKey: ['sign'] };
+            algorithm = 'RSA-PSS';
             break;
 
-        case "encrypt":
-            usages = { publicKey: ["encrypt"], privateKey: ["decrypt"] };
-            algorithm = "RSA-OAEP";
+        case 'encrypt':
+            usages = { publicKey: ['encrypt'], privateKey: ['decrypt'] };
+            algorithm = 'RSA-OAEP';
             break;
     }
 
     const importedSigPubKey = await window.crypto.subtle.importKey(
-        "spki",
+        'spki',
         B64ToAB(publicKeyB64),
         {
             name: algorithm,
-            hash: "SHA-256",
+            hash: 'SHA-256',
         },
         true,
-        usages.publicKey
+        usages.publicKey,
     );
     const importedSigPrivKey = await window.crypto.subtle.importKey(
-        "pkcs8",
+        'pkcs8',
         B64ToAB(privateKeyB64),
         {
             name: algorithm,
-            hash: "SHA-256",
+            hash: 'SHA-256',
         },
         true,
-        usages.privateKey
+        usages.privateKey,
     );
 
     return {
@@ -78,7 +78,7 @@ async function savePrivKeysToDB(
     encryptPrivKey,
     sigPrivKey,
     username,
-    password
+    password,
 ) {
     const encryptKeySalt = window.crypto.getRandomValues(new Uint8Array(16));
     const encryptCounter = window.crypto.getRandomValues(new Uint8Array(16));
@@ -86,7 +86,7 @@ async function savePrivKeysToDB(
         encryptPrivKey,
         password,
         encryptKeySalt,
-        encryptCounter
+        encryptCounter,
     );
 
     const sigKeySalt = window.crypto.getRandomValues(new Uint8Array(16));
@@ -95,10 +95,10 @@ async function savePrivKeysToDB(
         sigPrivKey,
         password,
         sigKeySalt,
-        sigCounter
+        sigCounter,
     );
 
-    const db_name = "harambe|" + username;
+    const db_name = 'harambe|' + username;
     const idb = window.indexedDB.open(db_name);
 
     idb.onerror = (event) => {
@@ -107,34 +107,34 @@ async function savePrivKeysToDB(
 
     idb.onupgradeneeded = (event) => {
         const db = event.target.result;
-        db.createObjectStore("encrypt");
-        db.createObjectStore("sig");
+        db.createObjectStore('encrypt');
+        db.createObjectStore('sig');
     };
 
     idb.onsuccess = (event) => {
         const db = event.target.result;
-        const transaction = db.transaction(["encrypt", "sig"], "readwrite");
-        const encryptPrivKey = transaction.objectStore("encrypt");
-        const sigPrivKey = transaction.objectStore("sig");
+        const transaction = db.transaction(['encrypt', 'sig'], 'readwrite');
+        const encryptPrivKey = transaction.objectStore('encrypt');
+        const sigPrivKey = transaction.objectStore('sig');
 
-        encryptPrivKey.put(wrappedEncryptPrivKey, "key");
-        encryptPrivKey.put(encryptKeySalt, "keySalt");
-        encryptPrivKey.put(encryptCounter, "counter");
+        encryptPrivKey.put(wrappedEncryptPrivKey, 'key');
+        encryptPrivKey.put(encryptKeySalt, 'keySalt');
+        encryptPrivKey.put(encryptCounter, 'counter');
 
-        sigPrivKey.put(wrappedSigPrivKey, "key");
-        sigPrivKey.put(sigKeySalt, "keySalt");
-        sigPrivKey.put(sigCounter, "counter");
+        sigPrivKey.put(wrappedSigPrivKey, 'key');
+        sigPrivKey.put(sigKeySalt, 'keySalt');
+        sigPrivKey.put(sigCounter, 'counter');
     };
 }
 
 async function getPrivKeyFromDB(keyType, password) {
     const currentUser = await getCurrentUsername();
     if (currentUser === null) {
-        throw new Error("Can't open db with null username")
+        throw new Error("Can't open db with null username");
     }
 
     return new Promise((resolve, reject) => {
-        const dbName = "harambe|" + currentUser;
+        const dbName = 'harambe|' + currentUser;
         const idb = window.indexedDB.open(dbName);
 
         idb.onerror = (event) => {
@@ -144,26 +144,26 @@ async function getPrivKeyFromDB(keyType, password) {
 
         idb.onsuccess = (event) => {
             const db = event.target.result;
-            const transaction = db.transaction([keyType], "readonly");
+            const transaction = db.transaction([keyType], 'readonly');
             const keyStore = transaction.objectStore(keyType);
 
-            const keyRequest = keyStore.get("key");
-            const saltRequest = keyStore.get("keySalt");
-            const counterRequest = keyStore.get("counter");
+            const keyRequest = keyStore.get('key');
+            const saltRequest = keyStore.get('keySalt');
+            const counterRequest = keyStore.get('counter');
 
             Promise.all(
                 [keyRequest, saltRequest, counterRequest].map((request) => {
                     return new Promise((resolve, reject) => {
                         request.onerror = (event) =>
                             reject(
-                                `Couldn't access keys: ${event.target.errorCode}`
+                                `Couldn't access keys: ${event.target.errorCode}`,
                             );
 
                         request.onsuccess = (event) => {
                             resolve(event.target.result);
                         };
                     });
-                })
+                }),
             )
                 .then(([wrappedPrivKey, keySalt, counter]) => {
                     unwrapPrivateKey(
@@ -171,7 +171,7 @@ async function getPrivKeyFromDB(keyType, password) {
                         password,
                         keySalt,
                         counter,
-                        keyType
+                        keyType,
                     )
                         .then((unwrappedPrivKey) => resolve(unwrappedPrivKey))
                         .catch((error) => reject(error));
@@ -187,14 +187,14 @@ async function wrapPrivateKey(privateKey, password, keySalt, counter) {
     const wrappingKey = await passwordToWrappingKey(password, keySalt);
 
     const encryptedPrivateKey = await window.crypto.subtle.wrapKey(
-        "pkcs8",
+        'pkcs8',
         privateKey,
         wrappingKey,
         {
-            name: "AES-CTR",
+            name: 'AES-CTR',
             counter: counter,
             length: 64,
-        }
+        },
     );
     return encryptedPrivateKey;
 }
@@ -204,38 +204,38 @@ async function unwrapPrivateKey(
     password,
     keySalt,
     counter,
-    keyType
+    keyType,
 ) {
     let usages, algorithm;
 
     switch (keyType) {
-        case "sig":
-            usages = ["sign"];
-            algorithm = "RSA-PSS";
+        case 'sig':
+            usages = ['sign'];
+            algorithm = 'RSA-PSS';
             break;
 
-        case "encrypt":
-            usages = ["decrypt"];
-            algorithm = "RSA-OAEP";
+        case 'encrypt':
+            usages = ['decrypt'];
+            algorithm = 'RSA-OAEP';
             break;
     }
 
     const wrappingKey = await passwordToWrappingKey(password, keySalt);
     const privateKey = await window.crypto.subtle.unwrapKey(
-        "pkcs8",
+        'pkcs8',
         encryptedPrivateKey,
         wrappingKey,
         {
-            name: "AES-CTR",
+            name: 'AES-CTR',
             counter: counter,
             length: 64,
         },
         {
             name: algorithm,
-            hash: "SHA-256",
+            hash: 'SHA-256',
         },
         true,
-        usages
+        usages,
     );
     return privateKey;
 }
@@ -246,24 +246,24 @@ async function passwordToWrappingKey(password, keySalt) {
 
     // NOTE: Very much not a key, this is just used to generate the key
     const keyMaterial = await window.crypto.subtle.importKey(
-        "raw",
+        'raw',
         passcodeAB,
-        "PBKDF2",
+        'PBKDF2',
         false,
-        ["deriveBits", "deriveKey"]
+        ['deriveBits', 'deriveKey'],
     );
 
     const wrappingKey = await window.crypto.subtle.deriveKey(
         {
-            name: "PBKDF2",
+            name: 'PBKDF2',
             salt: keySalt,
             iterations: 100_000,
-            hash: "SHA-256",
+            hash: 'SHA-256',
         },
         keyMaterial,
-        { name: "AES-CTR", length: 256 },
+        { name: 'AES-CTR', length: 256 },
         true,
-        ["wrapKey", "unwrapKey"]
+        ['wrapKey', 'unwrapKey'],
     );
     return wrappingKey;
 }
@@ -284,12 +284,12 @@ async function encryptFileData(key, counter, file) {
     const encrypt = async (data) => {
         return await window.crypto.subtle.encrypt(
             {
-                name: "AES-CTR",
+                name: 'AES-CTR',
                 counter,
                 length: 64,
             },
             key,
-            data
+            data,
         );
     };
 
@@ -308,12 +308,12 @@ async function decryptFileData(key, counter, encryptedFileData) {
     const decrypt = async (data) => {
         return await window.crypto.subtle.decrypt(
             {
-                name: "AES-CTR",
+                name: 'AES-CTR',
                 counter,
                 length: 64,
             },
             key,
-            data
+            data,
         );
     };
 
@@ -333,26 +333,26 @@ async function decryptFileData(key, counter, encryptedFileData) {
 }
 
 async function encryptFileKey(fileKey, publicKey) {
-    const fileKeyAB = await window.crypto.subtle.exportKey("raw", fileKey);
+    const fileKeyAB = await window.crypto.subtle.exportKey('raw', fileKey);
     return await window.crypto.subtle.encrypt(
-        { name: "RSA-OAEP" },
+        { name: 'RSA-OAEP' },
         publicKey,
-        fileKeyAB
+        fileKeyAB,
     );
 }
 
 async function decryptFileKey(encryptedFileKey, privateKey) {
     const fileKeyAB = await window.crypto.subtle.decrypt(
-        { name: "RSA-OAEP" },
+        { name: 'RSA-OAEP' },
         privateKey,
-        encryptedFileKey
+        encryptedFileKey,
     );
     return await window.crypto.subtle.importKey(
-        "raw",
+        'raw',
         fileKeyAB,
-        "AES-CTR",
+        'AES-CTR',
         true,
-        ["encrypt", "decrypt"]
+        ['encrypt', 'decrypt'],
     );
 }
 
@@ -371,44 +371,44 @@ async function getPublicKey(username, keyType) {
     const publicKeyResponse = await (
         await fetch(`${URL_PREFIX}/getPublicKey/${keyType}/${username}`)
     ).json();
-    const publicKeyB64 = publicKeyResponse["key"];
+    const publicKeyB64 = publicKeyResponse['key'];
 
     let name, usages;
-    if (keyType == "encrypt") {
-        name = "RSA-OAEP";
-        usages = ["encrypt"];
-    } else if (keyType == "sig") {
-        name = "RSA-PSS";
-        usages = ["verify"];
+    if (keyType == 'encrypt') {
+        name = 'RSA-OAEP';
+        usages = ['encrypt'];
+    } else if (keyType == 'sig') {
+        name = 'RSA-PSS';
+        usages = ['verify'];
     } else {
-        throw new Error("Key type is invalid");
+        throw new Error('Key type is invalid');
     }
 
     return await window.crypto.subtle.importKey(
-        "spki",
+        'spki',
         B64ToAB(publicKeyB64),
         {
             name: name,
-            hash: "SHA-256",
+            hash: 'SHA-256',
         },
         true,
-        usages
+        usages,
     );
 }
 
 async function signEncryptedFile(encryptedFile, sigPrivKey) {
     return await window.crypto.subtle.sign(
-        { name: "RSA-PSS", saltLength: 32 },
+        { name: 'RSA-PSS', saltLength: 32 },
         sigPrivKey,
-        encryptedFile
+        encryptedFile,
     );
 }
 
 async function verifyEncryptedFile(encryptedFile, signature, publicKey) {
     return await window.crypto.subtle.verify(
-        { name: "RSA-PSS", saltLength: 32 },
+        { name: 'RSA-PSS', saltLength: 32 },
         publicKey,
         signature,
-        encryptedFile
+        encryptedFile,
     );
 }
