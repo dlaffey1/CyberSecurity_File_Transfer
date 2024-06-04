@@ -16,7 +16,7 @@
 
     <label for="password">Password:</label>
     <input type="password" id="password" name="password" required />
-    <button type="button" id="togglePassword">Show Password</button>
+    <button type="button" id="togglePassword">Toggle Visibility</button>
     <ul id="passwordRequirements">
     </ul>
 
@@ -76,8 +76,9 @@
     <em>Public keys will be submitted to the server
       <br>
     Privates key will be stored locally</em>
-    <label for="keyPassword">Key Wrapping Password:</label>
+    <label for="keyPassword">Key Password:</label>
     <input type="password" id="keyPassword" required />
+    <button type="button" id="toggleKeyPassword">Toggle Visibility</button>
     <em>You will need to enter this every time you wish to upload, download or share a file</em>
 
     <button type="button" id="qrButton">Generate QR code</button>

@@ -1,22 +1,23 @@
 let encryptKeyPair;
 let sigKeyPair;
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', () => {
     addHiddenCopyButtons();
     addPasswordRequirements();
 
     const passwordInput = document.getElementById('password');
     const togglePasswordBtn = document.getElementById('togglePassword');
 
-    togglePasswordBtn.addEventListener('click', () => {
-        const type =
-            passwordInput.getAttribute('type') === 'password'
-                ? 'text'
-                : 'password';
-        passwordInput.setAttribute('type', type);
-        togglePasswordBtn.textContent =
-            type === 'password' ? 'Show Password' : 'Hide Password';
-    });
+    togglePasswordBtn.addEventListener('click', () =>
+        togglePasswordVis(passwordInput),
+    );
+
+    const keyPasswordInput = document.getElementById('keyPassword');
+    const toggleKeyPasswordBtn = document.getElementById('toggleKeyPassword');
+
+    toggleKeyPasswordBtn.addEventListener('click', () =>
+        togglePasswordVis(keyPasswordInput),
+    );
 
     const qrButton = document.getElementById('qrButton');
 
@@ -29,7 +30,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const otpauthURL = generateOTPAuthURL('Harambe', username, otpSecret);
 
-        console.log(otpauthURL);
         renderQRCode(otpauthURL);
     });
 
@@ -38,7 +38,6 @@ document.addEventListener('DOMContentLoaded', function () {
     form.addEventListener('submit', async () => {
         const username = document.getElementById('username').value;
         const keyPassword = document.getElementById('keyPassword').value;
-        console.log('Key password', keyPassword);
         savePrivKeysToDB(
             encryptKeyPair.privateKey,
             sigKeyPair.privateKey,
@@ -74,7 +73,7 @@ function addPasswordRequirements() {
         const { valid, requirements } = checkPasswordRequirements(password);
 
         if (!valid) {
-            submitBtn.setAttribute('disabled', "");
+            submitBtn.setAttribute('disabled', '');
         } else {
             submitBtn.removeAttribute('disabled');
         }

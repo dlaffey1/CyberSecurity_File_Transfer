@@ -1,4 +1,11 @@
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', () => {
+    const keyPasswordInput = document.getElementById('keyPassword');
+    const toggleKeyPasswordBtn = document.getElementById('toggleKeyPassword');
+
+    toggleKeyPasswordBtn.addEventListener('click', () =>
+        togglePasswordVis(keyPasswordInput),
+    );
+
     const form = document.getElementById('form');
 
     form.addEventListener('submit', async (event) => {

@@ -432,3 +432,9 @@ async function verifyEncryptedFile(encryptedFile, signature, publicKey) {
         encryptedFile,
     );
 }
+
+function togglePasswordVis(passwordInput) {
+    const type =
+        passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+    passwordInput.setAttribute('type', type);
+}
