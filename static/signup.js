@@ -63,6 +63,8 @@ function addHiddenCopyButtons() {
 function addPasswordRequirements() {
     const passwordInput = document.getElementById('password');
     const requirementsList = document.getElementById('passwordRequirements');
+    const submitBtn = document.getElementById('submit');
+
     passwordInput.addEventListener('blur', () => {
         const password = passwordInput.value;
         while (requirementsList.firstChild) {
@@ -72,7 +74,7 @@ function addPasswordRequirements() {
         const { valid, requirements } = checkPasswordRequirements(password);
 
         if (!valid) {
-            submitBtn.setAttribute("disabled", true);
+            submitBtn.setAttribute('disabled', true);
         }
 
         requirements.forEach((req) => {
